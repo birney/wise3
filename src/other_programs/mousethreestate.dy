@@ -1,0 +1,426 @@
+
+%{
+#include "snplocus.h"
+#include "ancestral.h"
+
+#define TargetMatchMusculus(j) (mat->target->musculus[j] == 1 ? mat->query->match : mat->query->mismatch)
+#define TargetMatchCast(j) (mat->target->cast[j] == 1 ? mat->query->match : mat->query->mismatch)
+#define TargetMatchDomesticus(j) (mat->target->domesticus[j] == 1 ? mat->query->match : mat->query->mismatch)
+
+%}
+
+
+
+struct SnpMatch
+long int len
+char * musculus
+char * cast
+char * domesticus
+
+
+struct GenomePara
+Score match
+Score mismatch
+Score extend
+Score bswitch
+int len
+
+
+matrix MouseSNPMatch
+query type="GenomePara*" name="query" field:len="len"
+target type="SnpMatch*" name="target"
+state Musculus offi="0" offj="1"
+      source Musculus
+      calc="query->extend"
+      endsource
+      source Cast
+      calc="query->bswitch"
+      endsource
+      source Domesticus
+      calc="query->bswitch"
+      endsource
+      source Start !left
+      calc="query->bswitch"
+      endsource
+      calc="TargetMatchMusculus(j)"
+      query_label Q
+      target_label MUSCULUS
+endstate
+state Cast offi="0" offj="1"
+      source Musculus
+      calc="query->bswitch"
+      endsource
+      source Cast
+      calc="query->extend"
+      endsource
+      source Domesticus
+      calc="query->bswitch"
+      endsource
+      source Start !left
+      calc="query->bswitch"
+      endsource
+      calc="TargetMatchCast(j)"
+      query_label Q
+      target_label CAST
+endstate
+state Domesticus offi="0" offj="1"
+      source Musculus
+      calc="query->bswitch"
+      endsource
+      source Cast
+      calc="query->bswitch"
+      endsource
+      source Domesticus
+      calc="query->extend"
+      endsource
+      source Start !left
+      calc="query->bswitch"
+      endsource
+      calc="TargetMatchDomesticus(j)"
+      query_label Q
+      target_label DOMESTICUS
+endstate
+state Start !start !special
+endstate 
+state End !end !special
+      source Musculus !right
+      calc="0"
+      endsource
+      source Domesticus !right
+      calc="0"
+      endsource
+      source Cast !right
+      calc="0"
+      endsource
+      query_label END
+      target_label END
+endstate
+endmatrix
+
+
+
+
+
+
+
+
+
+%{
+#include "mousethreestate.h"
+
+
+
+AncestralVarSet * ancestral_prediction_MouseThreeState(GenoVarSet * gvs,char * mus,char * cast,char * dom,GenomePara * gp,DPRunImpl * dpri)
+{
+  AncestralVarSet * out;
+  AncestralIndividual * ai;
+  char strain_state[1024];
+  
+  int i;
+  int j;
+
+
+  int mus_index;
+  int cast_index;
+  int dom_index;
+ 
+  int ind;
+
+  assert(gvs != NULL);
+  assert(mus != NULL);
+  assert(dom != NULL);
+  assert(cast != NULL);
+  assert(gp != NULL);
+
+  fprintf(stderr,"Into ancestral set\n");
+
+  out= AncestralVarSet_alloc_len(gvs->len);
+
+  for(i=0;i<gvs->ind_len;i++) {
+
+    if( strcmp(gvs->ind[i]->id,mus) == 0 ) {
+      ai = AncestralIndividual_alloc();
+      ai->name = stringalloc(gvs->ind[i]->id);
+      ai->single_letter = 'M';
+      strain_state[i] = out->anc_len;
+      mus_index = out->anc_len;
+      add_anc_AncestralVarSet(out,ai);
+      continue;
+    }
+
+    if( strcmp(gvs->ind[i]->id,dom) == 0 ) {
+      ai = AncestralIndividual_alloc();
+      ai->name = stringalloc(gvs->ind[i]->id);
+      ai->single_letter = 'D';
+      dom_index = out->anc_len;
+      strain_state[i] = out->anc_len;
+      add_anc_AncestralVarSet(out,ai);
+      continue;
+    }
+
+    if( strcmp(gvs->ind[i]->id,cast) == 0 ) {
+      ai = AncestralIndividual_alloc();
+      ai->name = stringalloc(gvs->ind[i]->id);
+      ai->single_letter = 'C';
+      cast_index = out->anc_len;
+      strain_state[i] = out->anc_len;
+      add_anc_AncestralVarSet(out,ai);
+      continue;
+    }
+
+    strain_state[i] = 100;
+    add_ind_AncestralVarSet(out,hard_link_Individual(gvs->ind[i]));
+  }
+
+  fprintf(stderr,"About to make chromosomes\n");
+
+  create_blank_AncestralChromosomes(out,gvs);
+    
+  /* now loop over each chromosome, 
+     run HMM and put in the designation
+  */
+
+  fprintf(stderr,"Entering main loop\n");
+
+  for(j=0;j<gvs->len;j++) {
+    ind = 0;
+    for(i=0;i<gvs->ind_len;i++) {
+      if( strain_state[i] != 100 ) {
+	/* it is an ancestor, skip it! */
+	continue;
+      }
+      
+      /* now make a packaln for this */
+      
+      auto SnpMatch * snpm;
+      auto AlnBlock * alb;
+      auto PackAln * pal;
+
+      info("Going to handle strain %s",gvs->ind[i]->id);      
+      
+      snpm = new_SnpMatch(gvs->chr[j],gvs,gvs->ind[i]->id,mus,cast,dom);
+
+      assert(snpm != NULL);
+
+      pal = PackAln_bestmemory_MouseSNPMatch(gp,snpm,NULL,dpri);
+
+      alb = convert_PackAln_to_AlnBlock_MouseSNPMatch(pal);
+
+      populate_individual_Ancestral_decoding_ThreeState(alb,out->chr[j],ind,mus_index,cast_index,dom_index);
+      
+      ind++;
+      free_AlnBlock(alb);
+      free_PackAln(pal);
+      free_SnpMatch(snpm);
+    }
+  }
+
+
+
+  return out;
+}
+
+
+void populate_individual_Ancestral_decoding_ThreeState(AlnBlock * alb,AncestralVarChr * avc,int ind_number,short int mus_index,short int cast_index,short int dom_index)
+{
+  AlnColumn * alc;
+  int j;
+
+  
+  assert(alb != NULL);
+  assert(avc != NULL);
+  
+  alc = alb->start->next;
+
+  assert(alc != NULL);
+
+  j = 0;
+  while( strcmp(alc->alu[0]->text_label,"END") != 0 ) {
+    
+   	 
+    if( strcmp(alc->alu[1]->text_label,"MUSCULUS") == 0 ) {
+      avc->loci[j]->ind[ind_number] = mus_index;
+    } else if ( strcmp(alc->alu[1]->text_label,"CAST") == 0 ) {
+      avc->loci[j]->ind[ind_number] = cast_index;
+    } else if ( strcmp(alc->alu[1]->text_label,"DOMESTICUS") == 0 ) {
+      avc->loci[j]->ind[ind_number] = dom_index;
+    } else {
+      avc->loci[j]->ind[ind_number] = 'U';
+    }
+
+/*    fprintf(stderr,"Looking at %s - produced %d\n",alc->alu[1]->text_label,avc->loci[j]->ind[ind_number]); */
+
+    j++;
+    alc = alc->next;
+
+    if( j > avc->len ) {
+      warn("Ran over chromosome lenght - AlnBlock is out of sync from Locus block");
+    }
+  }
+
+}
+
+
+void create_blank_AncestralChromosomes(AncestralVarSet * avs,GenoVarSet * gvs)
+{
+  int i;
+  int j;
+  int k;
+
+  assert(avs != NULL);
+  assert(gvs != NULL);
+  
+  for(i=0;i<gvs->len;i++) {
+    auto AncestralVarChr * avc;
+    
+    avc = AncestralVarChr_alloc_len(gvs->chr[i]->len);
+    add_AncestralVarSet(avs,avc);
+
+    avc->chr = stringalloc(gvs->chr[i]->chr);
+
+    for(j=0;j < gvs->chr[i]->len;j++) {
+      auto AncestralVarLocus * avl;
+
+      avl = AncestralVarLocus_alloc();
+      avl->var = hard_link_VarLocus(gvs->chr[i]->loci[j]->var);
+      avl->ind = calloc(avs->ind_len,sizeof(char));
+      avl->anc = calloc(avs->anc_len,sizeof(char));
+
+      for(k=0;k<avs->ind_len;k++) {
+	avl->ind[k] = -1;
+      }
+      add_AncestralVarChr(avc,avl);
+    }
+  }
+
+}
+
+
+GenomePara * new_GenomePara(Probability match,Probability bswitch)
+{
+  GenomePara * out;
+
+  out = GenomePara_alloc();
+
+  out->match = Probability2Score(match);
+  out->mismatch = Probability2Score(1.0 - match);
+
+  out->extend = Probability2Score(1.0 - 3*(bswitch));
+  out->bswitch = Probability2Score(bswitch);
+
+  out->len = 1;
+  return(out);
+}
+
+void show_SnpMatchStats(SnpMatch * snpm,FILE * ofp)
+{
+  int i;
+  long int mus  = 0;
+  long int dom = 0;
+  long int cast = 0;
+
+  assert(snpm != NULL);
+  assert(ofp != NULL);
+
+  for(i=0;i<snpm->len;i++) {
+    if( snpm->musculus[i] == 1 ) {
+      mus++;
+    }
+    if( snpm->domesticus[i] == 1 ) {
+      dom++;
+    }
+    if( snpm->cast[i] == 1 ) {
+      cast++;
+    }
+  }
+
+  fprintf(ofp,"Musculus %.2f Domesticus %.2f Cast %.2f %ld\n",
+	  ((double)mus/(double)snpm->len),
+	  ((double)dom/(double)snpm->len),
+	  ((double)cast/(double)snpm->len),
+	  snpm->len
+	  );
+}
+    
+  
+
+SnpMatch * new_SnpMatch(GenoVarChr * chr,GenoVarSet * set,char * test_strain,char * musculus,char * cast,char * domesticus)
+{
+  int strain_index;
+  int musculus_index;
+  int cast_index;
+  int domesticus_index;
+
+  int i;
+  int j;
+
+  SnpMatch * out;
+  int len;
+  
+  len = number_of_simple_snp_loci_GenoVarChr(chr);
+
+  out = SnpMatch_alloc();
+  out->len = len;
+  out->musculus = calloc(len,sizeof(char));
+  out->cast = calloc(len,sizeof(char));
+  out->domesticus = calloc(len,sizeof(char));
+  
+  strain_index = individual_index_from_string_GenoVarSet(set,test_strain);
+  assert(strain_index != -1);
+
+  musculus_index = individual_index_from_string_GenoVarSet(set,musculus);
+  assert(musculus_index != -1);
+
+  cast_index = individual_index_from_string_GenoVarSet(set,cast);
+  assert(cast_index != -1);
+
+  domesticus_index = individual_index_from_string_GenoVarSet(set,domesticus);
+  assert(domesticus_index != -1);
+
+  /*  fprintf(stdout,"Got indexes %d %d %d %d\n",
+	  strain_index,
+	  musculus_index,
+	  cast_index,
+	  domesticus_index);
+  */
+
+  j = 0;
+  for(i=0;i<chr->len;i++) {
+    auto GenoVarLocus * l;
+    l = chr->loci[i];
+    
+    if( l->var->locus_type != SIMPLE_SNP_LOCUS ) {
+      /*fprintf(stdout,"Non simple locus at %d with %d!\n",i,l->var->locus_type);*/
+      continue;
+    }
+
+    if( l->ind[strain_index] == l->ind[musculus_index] ) {
+      out->musculus[j] = 1;
+    } else {
+      out->musculus[j] = 0;
+    }
+
+
+    if( l->ind[strain_index] == l->ind[cast_index] ) {
+      out->cast[j] = 1;
+    } else {
+      out->cast[j] = 0;
+    }
+
+    if( l->ind[strain_index] == l->ind[domesticus_index] ) {
+      out->domesticus[j] = 1;
+    } else {
+      out->domesticus[j] = 0;
+    }
+
+    /*    fprintf(stdout,"%d,%d Testing %d vs %d - outcome %d %d %d\n",i,j,l->ind[strain_index],l->ind[musculus_index],out->musculus[j],out->cast[j],out->domesticus[j]); */
+
+    j++;
+  }
+
+
+
+  return out;
+}
+
+%}

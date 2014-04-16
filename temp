@@ -1,0 +1,141 @@
+genewise $Name:  $ (unreleased release)
+This program is freely distributed under a GPL. See source directory
+Copyright (c) GRL limited: portions of the code are from separate copyright
+
+Query protein:       ROA1_HUMAN
+Comp Matrix:         BLOSUM62.bla
+Gap open:            12
+Gap extension:       2
+Start/End            global
+Target Sequence      HSHNRNPA
+Strand:              forward
+Start/End (protein)  global
+Gene Parameter file: gene.stat
+Splice site model:   GT/AG only
+GT/AG bits penalty   0.00
+Codon Table:         codon.table
+Subs error:          1e-06
+Indel error:         1e-06
+Null model           syn
+Algorithm            623P
+
+genewise output
+Score 722.52 bits over entire alignment
+Scores as bits over a synchronous coding model
+
+Warning: The bits scores is not probablistically correct for single seqs
+See WWW help for more info
+
+ROA1_HUMAN         1 MSKSE                           PKEPEQLRKLFIGGLSF 
+                     MSKSE                           PKEPEQLRKLFIGGLSF 
+                     MSKSE                           PKEPEQLRKLFIGGLSF 
+HSHNRNPA         799 atatgGTGAGTT  Intron 1       TAGcagcgccaactaggtat 
+                     tcaca<0-----[814    :   1376]-0>caacaatgatttggtgt 
+                     gtgag                           tagcaggggcctaggct 
+
+
+ROA1_HUMAN        24 ETTDESLRSHFEQWGTLTDCV                           M 
+                     ETTDESLRSHFEQWGTLTDCV                           M 
+                     ETTDESLRSHFEQWGTLTDCV                           M 
+HSHNRNPA        1431 gaaggacaactgctgacagtgGTAAGAT  Intron 2       CAGa 
+                     accaagtggataaggctcagt<0-----[1494   :   1788]-0>t 
+                     aattgcggcttgagagcgctg                           g 
+
+
+ROA1_HUMAN        47 RDPNTKRSRGFGFVTYATVEEVDAAMNARPHKVDGRVVEPKRAVSRE   
+                     RDPNTKRSRGFGFVTYATVEEVDAAMNARPHKVDGRVVEPKRAVSRE   
+                     RDPNTKRSRGFGFVTYATVEEVDAAMNARPHKVDGRVVEPKRAVSRE   
+HSHNRNPA        1795 agcaaactagtgtgatgagggggggaagaccagggagggcaaggtag   
+                     gacacagcggtgttcacctaatacctacgcaataggttacagctcga   
+                     ataccgctgctgtcatctggggtatgtagacggtaatgaagatccaa   
+
+
+ROA1_HUMAN        94                            SQRPGAHLTVKKIFVGGIKEDT 
+                                                SQRPGAHLTVKKIFVGGIKEDT 
+                                                SQRPGAHLTVKKIFVGGIKEDT 
+HSHNRNPA        1936 GTGAGTG  Intron 3       TAGtcacggctagaaatgggaagga 
+                     <0-----[1936   :   2083]-0>cagcgcatctaatttggtaaac 
+                                                taaatccatgagatttctaact 
+
+
+ROA1_HUMAN       117 EEHHLRDYFEQYGKIEVIEIMTDRGSGKKRGFAFVTFDDHDSVDKIV   
+                     EEHHLRDYFEQYGKIEVIEIMTDRGSGKKRGFAFVTFDDHDSVDKIV   
+                     EEHHLRDYFEQYGKIEVIEIMTDRGSGKKRGFAFVTFDDHDSVDKIV   
+HSHNRNPA        2153 ggcccagttgctgaaggagaaagcgagaaagtgtgatggcgtggaag   
+                     aaaatgaataaagatattattcaggggaaggtcttctaaaactaatt   
+                     aatcaatttagtaatagtacgtcactcgagctctactcctccgtgtc   
+
+
+ROA1_HUMAN       164                               QKYHTVNGHNCEVRKALSK 
+                                                   QKYHTVNGHNCEVRKALSK 
+                               I:I[att]            QKYHTVNGHNCEVRKALSK 
+HSHNRNPA        2294 AGTAAGTA  Intron 4       TAGTTcatcagagcatggaagcta 
+                      <1-----[2295   :   2387]-1>  aaaactagaagatgactca 
+                                                   gacttgtccctataacgag 
+
+
+ROA1_HUMAN       184 QEMASASSSQR                              RSGSGNFG 
+                     QEMASASSSQR                              RSGSGNFG 
+                     QEMASASSSQR          G:G[ggt]            RSGSGNFG 
+HSHNRNPA        2447 cgagagttacaGGTATGCT  Intron 5       AAGGTcagtgatg 
+                     aatcgcccgag <1-----[2481   :   2566]-1>  gggcgatg 
+                     aggtttaccaa                              atttactt 
+
+
+ROA1_HUMAN       204 GGRGGGFGGNDNFGRGGNFSGR                            
+                     GGRGGGFGGNDNFGRGGNFSGR                            
+                     GGRGGGFGGNDNFGRGGNFSGR          G:G[ggt]          
+HSHNRNPA        2593 ggcgggtggagatgcggatagcGGTATGTA  Intron 6          
+                     ggggggtggaaatggggatggg <1-----[2660   :   2793]   
+                     tttattctgtcccttaaccttt                            
+
+
+ROA1_HUMAN       226      GFGGSRGGGGYGGSGDGYNGFGND                     
+                          GFGGSRGGGGYGGSGDGYNGFGND                     
+                          GFGGSRGGGGYGGSGDGYNGFGND                     
+HSHNRNPA        2791 CAGGTgtggacggggtggagggtagtgag                     
+                     -1>  gtggggggggaggggagaagtgaa                     
+                          cttccttttattctgtcttatctt                     
+
+
+ROA1_HUMAN       251                               GYGGGGPGYSGGSRGYGSG 
+                                                   GYGGGGPGYSGGSRGYGSG 
+                               G:G[ggt]            GYGGGGPGYSGGSRGYGSG 
+HSHNRNPA        2868 GGTAAGTT  Intron 7       TAGGTgtggggcgttggaagtgag 
+                      <1-----[2869   :   3072]-1>  gaggggcgacgggggaggg 
+                                                   ttaaccttctaacactatt 
+
+
+ROA1_HUMAN       271 GQGYGNQGSGYGGSGSYDSYNNGGGRGFGGGS                  
+                     GQGYGNQGSGYGGSGSYDSYNNGGG GFGGGS                  
+                     GQGYGNQGSGYGGSGSYDSYNNGGGGGFGGGS                  
+HSHNRNPA        3132 gcgtgacgagtggagatgataagggggtggga                  
+                     gagagaagggagggggaagaaagggggtgggg                  
+                     agttacgctctcgtcctcctccacacctcttt                  
+
+
+ROA1_HUMAN       303                               SNFGGGGSYNDFGNYNNQS 
+                                                   SNFGGGGSYNDFGNYNNQS 
+                               G:G[gga]            SNFGGGGSYNDFGNYNNQS 
+HSHNRNPA        3228 GGTAGGTA  Intron 8       TAGGAaatggggatagtgataact 
+                      <1-----[3229   :   3805]-1>  gatgggggaaatgaaaaac 
+                                                   cttattacctttgtcctgt 
+
+
+ROA1_HUMAN       323 SNFGPMKGGNFGGRSSGPYGGGGQYFAKPRNQ                  
+                     SNFGPMKGGNFGGRSSGPYGGGGQYFAKPRNQ                  
+                     SNFGPMKGGNFGGRSSGPYGGGGQYFAKPRNQ                  
+HSHNRNPA        3865 tatgcaaggatggaatgctggggcttgaccac                  
+                     catgctaggatggggcgcaggggaatcacgaa                  
+                     attacggaattacactcctctacactaaaaca                  
+
+
+ROA1_HUMAN       355                               GYGGSSSSSSYGSGRRF  
+                                                   GYGGSSSSSSYGSGRR    
+                               G:G[ggt]            GYGGSSSSSSYGSGRR-F  
+HSHNRNPA        3961 GGTATGGT  Intron 9       CAGGTgtggtaaaaatgagaa t  
+                      <1-----[3962   :   4251]-1>  gaggcgggggaggggg t  
+                                                   ctctcccctctctcaa t  
+
+
+//

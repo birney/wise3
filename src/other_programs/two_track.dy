@@ -1,0 +1,380 @@
+
+%{
+#include "dyna.h"
+
+
+#define TwoTrackLISTLENGTH 80
+#define TwoTrackScoreLISTLENGTH 80
+
+#define TwoTrackSetLISTLENGTH 1024
+
+
+typedef enum TwoTrackUnit_type {
+  TwoTrackUnit_main = 67,
+  TwoTrackUnit_side
+} TwoTrackUnit_type;
+
+
+typedef long int LongInt;
+
+%}
+
+
+struct TwoTrackUnit
+TwoTrackUnit_type type
+Probability emission[5]
+
+struct TwoTrack
+Sequence * seq
+TwoTrackUnit ** unit !list
+
+struct TwoTrackSet
+TwoTrack ** read !list
+
+struct TwoTrackScoreUnit
+TwoTrackUnit_type type
+Score emission[5]
+
+struct TwoTrackScore
+TwoTrackScoreUnit ** unit !list
+
+struct TwoTrackSetStats
+LongInt reads
+LongInt main_bases
+LongInt side_bases
+double main_avg_likelihood
+double side_avg_likelihood
+LongInt called_main_bases[5]
+LongInt most_likely_main_bases[5]
+LongInt most_likely_side_bases[5]
+
+
+%{
+#include "two_track.h"
+
+static const char * two_track_alphabet = "ACGT";
+
+%func
+writes out stats
+%%
+void write_TwoTrackSetStats(TwoTrackSetStats * st,FILE * ofp)
+{
+  int i;
+
+  assert(ofp != NULL);
+  assert(st != NULL);
+
+  fprintf(ofp,"Total reads       %ld\n",st->reads);
+  fprintf(ofp,"Total main bases  %ld Avg: (%.2f)\n",st->main_bases,(double) st->main_bases / (double) st->reads);
+  fprintf(ofp,"Total side bases  %ld Avg: (%.2f)\n",st->side_bases,(double) st->side_bases / (double) st->reads);
+  fprintf(ofp,"Main avg likelihood %.6f\n",st->main_avg_likelihood);
+  fprintf(ofp,"Side avg likelihood %.6f\n",st->side_avg_likelihood);
+
+  fprintf(ofp,"  Called base distribution\n");
+  for(i=0;i<4;i++) {
+    fprintf(ofp,"   %c %.4f",char_from_base(i),st->called_main_bases[i]/(double)st->main_bases);
+  }
+
+  fprintf(ofp,"\n  Most likely main base distribution\n");
+  for(i=0;i<4;i++) {
+    fprintf(ofp,"   %c %.4f",char_from_base(i),st->most_likely_main_bases[i]/(double)st->main_bases);
+  }
+
+  fprintf(ofp,"\n  Most likely side base distribution\n");
+  for(i=0;i<4;i++) {
+    fprintf(ofp,"   %c %.4f",char_from_base(i),st->most_likely_side_bases[i]/(double)st->main_bases);
+  }
+
+}
+
+%func
+Makes stats from a set
+%%
+TwoTrackSetStats * TwoTrackSetStats_from_TwoTrackSet(TwoTrackSet * set)
+{
+  int i,j,k;
+
+  TwoTrackSetStats * out;
+  long double total_main_lik = 0.0;
+  long double total_side_lik = 0.0;
+
+
+  out = TwoTrackSetStats_alloc();
+  out->reads = set->len;
+  out->main_bases = 0;
+  out->side_bases = 0;
+
+  out->called_main_bases[0] = out->called_main_bases[1] = out->called_main_bases[2] = out->called_main_bases[3] = 0;
+
+  out->most_likely_main_bases[0] = out->most_likely_main_bases[1] = out->most_likely_main_bases[2] = out->most_likely_main_bases[3] = 0;
+
+  out->most_likely_side_bases[0] = out->most_likely_side_bases[1] = out->most_likely_side_bases[2] = out->most_likely_side_bases[3] = 0;
+
+
+  for(i=0;i<set->len;i++) {
+    for(j=0;j<set->read[i]->seq->len;j++) {
+      out->called_main_bases[base_from_char(set->read[i]->seq->seq[j])]++;
+    }
+
+    for(j=0;j<set->read[i]->len;j++) {
+      if( set->read[i]->unit[j]->type == TwoTrackUnit_main ) {
+	out->main_bases++;
+	out->most_likely_main_bases[most_likely_base_TwoTrackUnit(set->read[i]->unit[j])]++;
+
+	for(k=0;k<4;k++) {
+	  total_main_lik += set->read[i]->unit[j]->emission[k];
+	}
+      } else if( set->read[i]->unit[j]->type == TwoTrackUnit_side ) {
+	out->most_likely_side_bases[most_likely_base_TwoTrackUnit(set->read[i]->unit[j])]++;
+
+	out->side_bases++;
+	for(k=0;k<4;k++) {
+	  total_side_lik += set->read[i]->unit[j]->emission[k];
+	}
+      } else {
+	warn("Not recognisable type");
+      }
+    }
+  }
+
+  out->main_avg_likelihood = (double) total_main_lik / (double) out->main_bases;
+
+  out->side_avg_likelihood = (double) total_side_lik / (double) out->side_bases;
+
+  return out;
+}
+
+base most_likely_base_TwoTrackUnit(TwoTrackUnit * u)
+{
+  int i;
+  double max;
+  int best;
+  
+  for(i=1, best = 0, max = u->emission[0];i<4;i++) {
+    if( u->emission[i] > max ) {
+      max = u->emission[i];
+      best = i;
+    }
+  }
+
+  return best;
+}
+
+%func
+complete conversion
+%%
+TwoTrackScore * TwoTrackScore_from_TwoTrack(TwoTrack * t,Probability emission_ratio)
+{
+  TwoTrackScore * out;
+  int i;
+
+  assert(t != NULL);
+  assert(emission_ratio != 0.0 );
+
+  out = TwoTrackScore_alloc_len(t->len);
+  
+  for(i=0;i<t->len;i++) {
+    add_TwoTrackScore(out,TwoTrackScoreUnit_from_TwoTrackUnit(t->unit[i],emission_ratio));
+  }
+  
+  return out;
+}
+
+
+%func
+conversion
+%%
+TwoTrackScoreUnit * TwoTrackScoreUnit_from_TwoTrackUnit(TwoTrackUnit * u,Probability ratio)
+{
+  TwoTrackScoreUnit * out;
+  int j;
+
+  out = TwoTrackScoreUnit_alloc();
+  out->type = u->type;
+
+  for(j=0;j<4;j++) {
+    out->emission[j] = Probability2Score(u->emission[j]/ratio);
+  }
+
+  return out;
+}
+
+%func
+plain output
+%%
+void write_plain_TwoTrackSet(TwoTrackSet * set,FILE * ofp)
+{
+  int j;
+
+  assert(set != NULL);
+  assert(ofp != NULL);
+
+  for(j=0;j<set->len;j++) {
+    write_plain_TwoTrack(set->read[j],ofp);
+  }
+}
+
+%func
+type string
+%%
+char * TwoTrackUnit_type_to_string(TwoTrackUnit_type type)
+{
+  switch(type) {
+  case TwoTrackUnit_main :
+      return("Main");
+    
+  case TwoTrackUnit_side :
+      return("Side");
+
+  default :
+    return("UnknownTwoTypeUnit_type");
+  }
+}
+
+
+%func
+output in columns - base, and 4 likes
+
+%%
+void write_plain_TwoTrack(TwoTrack * two,FILE * ofp)
+{
+  int i;
+
+
+  assert(two != NULL);
+  assert(ofp != NULL);
+
+  fprintf(ofp,"Sequence %s\n",two->seq->name);
+  for(i=0;i<two->seq->len;i++) {
+    fprintf(ofp,"%c\t%s\t%c\t%f\t%c\t%f\t%c\t%f\t%c\t%f\n",two->seq->seq[i],TwoTrackUnit_type_to_string(two->unit[i]->type),
+	    char_from_base(0),two->unit[i]->emission[0],
+	    char_from_base(1),two->unit[i]->emission[1],
+	    char_from_base(2),two->unit[i]->emission[2],
+	    char_from_base(3),two->unit[i]->emission[3]);
+
+  }
+
+  fprintf(ofp,"//\n");
+
+}
+
+
+%func
+Reads a two track file with a default reporting of every
+1000 sequences read and the entire file
+%%
+TwoTrackSet * read_two_track_Tim_style(char * seq_file,char * like_file)
+{
+  return read_two_track_Tim_style_report(seq_file,like_file,1000,0);
+}
+
+
+%func
+Reads a two track file from Solexa style information
+from Tim Massinghams lik files
+
+Assummes all positions are main emissions
+
+report freq means the function will report every xx lines
+%%
+TwoTrackSet * read_two_track_Tim_style_report(char * seq_file,char * like_file,int report_freq, int truncate_after)
+{
+  FILE * sfp;
+  FILE * lfp;
+
+  TwoTrackSet * out;
+  TwoTrack * t;
+  TwoTrackUnit * u;
+
+  char sbuffer[MAXLINE];
+  char lbuffer[40000];
+
+  long int totallen  = 0;
+  long int count = 0;
+
+  char nameb[MAXLINE];
+
+  char * strp;
+  char * tok;
+  char * split[40];
+
+  int i;
+  int j;
+
+  double val;
+
+  assert(seq_file != NULL);
+  assert(like_file != NULL);
+
+  sfp = openfile(seq_file,"r");
+  lfp = openfile(like_file,"r");
+
+  out = TwoTrackSet_alloc_std();
+
+  while( fgets(sbuffer,MAXLINE,sfp) != NULL ) {
+    if( truncate_after != 0 && count > truncate_after ) {
+      break;
+    }
+
+    if( fgets(lbuffer,40000,lfp) == NULL ) {
+      warn("Bad scenario got a sequence line, no likelihood, exiting");
+      break;
+    }
+
+    
+    /* parse sbuffer */
+    strp = sbuffer;
+    for(i=0; (tok = strsep(&strp,spacestr)) != NULL && i < 5;i++) {
+      split[i] = tok;
+    }
+
+    sprintf(nameb,"Solexa_%s_%s_%s_%s",split[0],split[1],split[2],split[3]);
+
+
+
+    t = TwoTrack_alloc_std();
+    t->seq = new_Sequence_from_strings(nameb,split[4]);
+
+    totallen += t->seq->len;
+    count++;
+
+    if( report_freq != 0 && count % report_freq == 0 ) {
+      info("Read %d sequences %s, average lenght %.2f",count,t->seq->name,(double) totallen / count);
+    }
+    
+   
+
+    /* now parse like */
+    strp = lbuffer;
+    for(i=0; i < 4 && (tok = strsep(&strp,spacestr)) != NULL;i++) {
+       /* could check it matched */
+    }
+
+    for(i=0;i<t->seq->len;i++) {
+      u = TwoTrackUnit_alloc();
+      add_TwoTrack(t,u);
+
+      for(j = 0;j< 4;j++) {
+	tok = strsep(&strp,spacestr);
+	if( tok == NULL ) {
+	  warn("Ran out likelihood values on sequence %s, position %d, nucleotide %d. Going to exit ugly",nameb,i,j);
+	  /* this is not ideal */
+	  return NULL;
+	}
+
+	val = strtod(tok,NULL);
+
+	u->emission[base_from_char(two_track_alphabet[j])] = val;
+	u->type = TwoTrackUnit_main;
+      }
+    }
+
+    add_TwoTrackSet(out,t);
+  }
+
+
+  return out;
+}
+
+
+%}

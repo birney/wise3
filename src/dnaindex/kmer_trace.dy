@@ -1,0 +1,66 @@
+
+
+%{
+#include "kmer_index_interface.h"
+
+#define MAXKMERTRACE 4
+#define MAXKMERREADPAIR 4
+
+typedef struct KmerTrace {
+  kmer_t forward;
+  kmer_t backward;
+  long int count;
+  boolean is_dead;
+  struct KmerTrace * right[MAXKMERTRACE];
+  struct KmerTrace * left[MAXKMERTRACE];
+  struct KmerTrace * pair[MAXKMERREADPAIR];
+} KmerTrace;
+
+
+typedef struct KmerTraceSet {
+  KmerIndexInterface * kii;
+} KmerTraceSet;
+
+
+%}
+
+
+
+
+%{
+#include "kmer_trace.h"
+
+
+
+boolean add_Sequence_KmerTraceSet(KmerTraceSet * kts,Sequence * seq)
+{
+  KmerTrace * kt;
+  kmer_t forward;
+  kmer_t backward;
+  int i;
+
+  assert(kts != NULL);
+  assert(seq != NULL);
+  
+  for(i=0;i<seq->len-ci->kii->kmer_size;i++) {
+    forward = forward_dna_number_from_string(seq->seq+i,ci->kii->kmer_size); 
+    reverse = reverse_complement_dna_number(forward,ci->kii->kmer_size);
+    /*
+      number = 0;
+      for(k=0;k<ci->kii->kmer_size;k++) {
+      number = number + (base_numbers[i+k]*base_nos[k]);
+      }
+    */  
+    assert(forward>= 0);
+    assert(reverse>= 0);
+
+    
+
+
+  
+  
+
+}
+
+
+%}

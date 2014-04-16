@@ -1,0 +1,330 @@
+
+%{
+#include "snplocus.h"
+#include "plot.h"
+
+#define AncestralVarChrLISTLENGTH 1048
+#define AncestralVarSetLISTLENGTH 60
+
+#define AncestralBlockStrainLISTLENGTH 60
+#define AncestralBlockSetLISTLENGTH 60
+
+%}
+
+
+
+struct AncestralVarLocus
+VarLocus * var
+char * ind // short int of length individual, number of ancestor number
+char * anc // shor int of length ancestor number, 0 for reference, 1 for alternate
+
+struct AncestralVarChr
+char * chr
+AncestralVarLocus ** loci !list
+
+struct AncestralIndividual
+char * name
+char single_letter !def="'U'"
+
+struct AncestralVarSet
+AncestralVarChr ** chr !list
+Individual ** ind !list !len="ind_"
+AncestralIndividual ** anc !list !len="anc_"
+
+
+
+struct AncestralBlock
+char * chr
+long int start
+long int end
+int snp_count
+int anc_diff
+AncestralIndividual * ai
+
+struct AncestralBlockStrain
+AncestralBlock ** block !list
+Individual * ind
+
+struct AncestralBlockSet
+AncestralBlockStrain ** strain !list
+
+
+%{
+#include "ancestral.h"
+
+void dump_AncestralBlockSet(AncestralBlockSet * abs,FILE * ofp)
+{
+  int i;
+  int j;
+
+  assert(abs != NULL);
+  assert(ofp != NULL);
+
+  fprintf(ofp,"strain\tchr\tstart\tend\tancestor\tsnp\tdiff\n");
+  for(i=0;i<abs->len;i++) {
+    for(j=0;j<abs->strain[i]->len;j++) {
+      fprintf(ofp,"%s\t%s\t%ld\t%ld\t%s\t%d\t%d\n",
+	      abs->strain[i]->ind->id,
+	      abs->strain[i]->block[j]->chr,
+	      abs->strain[i]->block[j]->start,
+	      abs->strain[i]->block[j]->end,
+	      abs->strain[i]->block[j]->ai->name,
+	      abs->strain[i]->block[j]->snp_count,
+	      abs->strain[i]->block[j]->anc_diff
+	      );
+    }
+  }
+}
+
+
+AncestralBlockSet * AncestralBlockSet_from_AncestralVarSet(AncestralVarSet * avs,GenoVarSet * gvs)
+{
+  int i;
+  int j;
+  int k;
+
+  int snp_count;
+  int anc_diff;
+
+  AncestralBlockSet * out;
+  AncestralBlockStrain * strain;
+  AncestralBlock * b;
+
+
+  assert(avs != NULL);
+  assert(gvs != NULL);
+
+  out = AncestralBlockSet_alloc_std();
+
+  for(i=0;i<avs->ind_len;i++) {
+    strain = AncestralBlockStrain_alloc_std();
+    add_AncestralBlockSet(out,strain);
+
+    strain->ind = hard_link_Individual(avs->ind[i]);
+
+    for(j=0;j<avs->len;j++) {
+      auto AncestralVarLocus * loci;
+
+      loci = avs->chr[j]->loci[0];
+      snp_count = 1;
+
+      for(k=1;k<avs->chr[j]->len;k++) {
+	if( loci->ind[i] != avs->chr[j]->loci[k]->ind[i] ) {
+	  /* new block from loci to here */
+	  b = AncestralBlock_alloc();
+	  b->chr = stringalloc(avs->chr[j]->chr);
+	  b->start = loci->var->pos;
+	  b->end = avs->chr[j]->loci[k-1]->var->pos;
+	  b->snp_count = snp_count;
+	  b->anc_diff = anc_diff;
+
+	  assert(loci->ind[i] < avs->anc_len);
+
+	  b->ai = hard_link_AncestralIndividual(avs->anc[loci->ind[i]]);
+	  add_AncestralBlockStrain(strain,b);
+
+
+	  loci =  avs->chr[j]->loci[k];
+	  snp_count = 0;
+	  anc_diff = 0;
+	} else {
+	  snp_count++;
+	}
+      }
+    }
+  }
+
+  return out;
+}
+
+void dump_as_pairwise_AncestralVarSet(AncestralVarSet * avs,GenoVarSet * gvs,FILE * ofp)
+{
+  int i;
+  int j;
+  
+  int a;
+  int b;
+  
+
+  /* loop over chromosomes first */
+
+  for(i=0;i<avs->len;i++) {
+    auto AncestralVarChr * chr;
+
+    chr = avs->chr[i];
+
+    /* loop over pairwise individuals */
+
+    for(a=0;a<avs->ind_len;a++) {
+      for(b=a+1;b<avs->ind_len;b++) {
+	
+	auto AncestralVarLocus * loci = NULL;
+
+	auto int snp_count = 0;
+	auto int diff = 0;
+
+	auto int original_a;
+	auto int original_b;
+
+	/* the ancestral indexes are not necessarily the same
+	   as the original indexes */
+
+	original_a = individual_index_from_string_GenoVarSet(gvs,avs->ind[a]->id);
+	original_b = individual_index_from_string_GenoVarSet(gvs,avs->ind[b]->id);
+	
+
+	loci = chr->loci[0];
+	
+	for(j=1;j<chr->len;j++) {
+	 
+	  if( loci->ind[a] != chr->loci[j]->ind[a] ||
+	      loci->ind[b] != chr->loci[j]->ind[b] ) {
+	    /* means this block has ended; dump */
+
+	    fprintf(ofp,"%s\t%ld\t%ld\t%s\t%s\t%s\t%s\t%d\t%d\n",
+		    chr->chr,
+		    loci->var->pos,
+		    chr->loci[j]->var->pos,
+		    avs->ind[a]->id,
+		    avs->ind[b]->id,
+		    avs->anc[loci->ind[a]]->name,
+		    avs->anc[loci->ind[b]]->name,
+		    snp_count,
+		    diff
+		    );
+	    loci = chr->loci[j];
+	    snp_count = 0;
+	    diff = 0;
+	    continue;
+	  }
+
+	  /* block continues - look at snp difference */
+	  
+	  snp_count++;
+
+	  /* we assumme everything matches perfectly */
+	  assert(gvs->chr[i]->loci[j]->var == chr->loci[j]->var);
+	  
+	  if( gvs->chr[i]->loci[j]->ind[original_a] != 
+	      gvs->chr[i]->loci[j]->ind[original_b] ) {
+	    diff++;
+	  } else {
+	    /* no difference */
+	  }
+	} /* end of for loci */
+      } /* end of inner loop, ind b */
+    } /* end of outer loop, ind a */
+  }
+	  
+}
+
+
+void write_simple_AncestralVarSet(AncestralVarSet * avs,FILE * ofp)
+{
+  int i;
+  int j;
+  int k;
+
+
+  assert(avs != NULL);
+  assert(ofp != NULL);
+
+  fprintf(ofp,"Chr\tPos\tRef\tAlt");
+  
+  for(i=0;i<avs->ind_len;i++) {
+    fprintf(ofp,"\t%s",avs->ind[i]->id);
+  }
+
+  fprintf(ofp,"\n");
+
+  for(i=0;i<avs->len;i++) {
+    auto AncestralVarChr * chr = avs->chr[i];
+    for(j=0;j<chr->len;j++) {
+      auto AncestralVarLocus * l = chr->loci[j];
+
+      assert(l != NULL);
+      assert(l->var != NULL);
+
+      fprintf(ofp,"%s\t%ld\t%s\t%s",chr->chr,l->var->pos,l->var->ref_allele,l->var->alt_allele);
+      
+      for(k=0;k<avs->ind_len;k++) {
+	auto char index = l->ind[k];
+	auto char c;
+
+	if( index == -1 ) {
+	  c = 'U';
+	} else {
+	  c = avs->anc[index]->single_letter;
+	}
+
+	fprintf(ofp,"\t%c",c);
+      }
+
+      fprintf(ofp,"\n");
+    }
+  }
+
+}
+
+
+FrameSet * AncestralVarChr_as_FrameSet(AncestralVarSet * avs,AncestralVarChr * avc)
+{
+  FrameSet * fs;
+  int i;
+  int j;
+  AncestralVarLocus * l;
+  BoxGlyph * box;
+
+  long int start_x;
+  double scale_factor = 20000.0;
+
+  Colour * set[256];
+  char buffer[128];
+
+  set[0] = std_Colour("red");
+  set[1] = std_Colour("blue");
+  set[2] = std_Colour("green");
+
+
+
+  start_x = avc->loci[0]->var->pos;
+
+  fs = FrameSet_alloc_std();
+
+  sprintf(buffer,"%ld",start_x);
+  box = text_BoxGlyph(50,10,buffer,7.0);
+
+  add_FrameSet(fs,box);
+
+  sprintf(buffer,"%ld",avc->loci[avc->len-1]->var->pos);
+
+  box = text_BoxGlyph(50+(avc->loci[avc->len-1]->var->pos - start_x)/scale_factor,10,buffer,7.0);
+
+  add_FrameSet(fs,box);
+
+  for(i=0;i<avs->ind_len;i++) {
+    l = avc->loci[0];
+
+    box = text_BoxGlyph(15,(i+2)*10,avs->ind[i]->id,10.0);
+    add_FrameSet(fs,box);
+    for(j=1;j<avc->len;j++) {
+      if( l->ind[i] != avc->loci[j]->ind[i] ) {
+	/* make a rectangle */
+	box = filled_rect_BoxGlyph(50 + ((l->var->pos - start_x) / scale_factor),
+				   (i+2)*10,
+				   50 + ((avc->loci[j]->var->pos - start_x) / scale_factor),
+				   (i+2.9) * 10,
+				   set[l->ind[i]],
+				   NULL);
+	l = avc->loci[j];
+	add_FrameSet(fs,box);
+      }
+    }
+  }
+
+      
+  return(fs);
+}
+
+%}
+

@@ -1,0 +1,125 @@
+genewise $Name:  $ (unreleased release)
+This program is freely distributed under a GPL. See source directory
+Copyright (c) GRL limited: portions of the code are from separate copyright
+
+Query protein:       ROA1_XENLA
+Comp Matrix:         BLOSUM62.bla
+Gap open:            12
+Gap extension:       2
+Start/End            default
+Target Sequence      HSHNRNPA
+Strand:              forward
+Start/End (protein)  default
+Gene Parameter file: gene.stat
+Splice site model:   GT/AG only
+GT/AG bits penalty   -9.96
+Codon Table:         codon.table
+Subs error:          1e-06
+Indel error:         1e-06
+Null model           syn
+Algorithm            623
+
+genewise output
+Score 379.83 bits over entire alignment
+Scores as bits over a synchronous coding model
+
+Warning: The bits scores is not probablistically correct for single seqs
+See WWW help for more info
+
+ROA1_XENLA         1 MHKSEAPNEPEQLRKLFIGGLSFETTDESLREHFEQWGTLTDCV      
+                           P EPEQLRKLFIGGLSFETTDESLR HFEQWGTLTDCV      
+                     -----SPKEPEQLRKLFIGGLSFETTDESLRSHFEQWGTLTDCV      
+HSHNRNPA        1377      tcagcgccaactaggtatgaaggacaactgctgacagtg      
+                          ccaacaatgatttggtgtaccaagtggataaggctcagt      
+                          ttagcaggggcctaggctaattgcggcttgagagcgctg      
+
+
+ROA1_XENLA        45                            VMRDPNSKRSRGFGFVTYLSTD 
+                                                VMRDPN+KRSRGFGFVTY + + 
+                                                VMRDPNTKRSRGFGFVTYATVE 
+HSHNRNPA        1494 GTAAGAT  Intron 1       CAGgaagcaaactagtgtgatgagg 
+                     <0-----[1494   :   1788]-0>ttgacacagcggtgttcaccta 
+                                                agataccgctgctgtcatctgg 
+
+
+ROA1_XENLA        67 EVDAAMTARPHKVDGRVVEPKRAVSRE                       
+                     EVDAAM ARPHKVDGRVVEPKRAVSRE                       
+                     EVDAAMNARPHKVDGRVVEPKRAVSRE                       
+HSHNRNPA        1855 gggggaagaccagggagggcaaggtag                       
+                     atacctacgcaataggttacagctcga                       
+                     ggtatgtagacggtaatgaagatccaa                       
+
+
+ROA1_XENLA        94                            DSSRPGAHLTVKKIFVGGIKED 
+                                                DS RPGAHLTVKKIFVGGIKED 
+                                                DSQRPGAHLTVKKIFVGGIKED 
+HSHNRNPA        1936 GTGAGTG  Intron 2       TAGgtcacggctagaaatgggaagg 
+                     <0-----[1936   :   2083]-0>acagcgcatctaatttggtaaa 
+                                                ttaaatccatgagatttctaac 
+
+
+ROA1_XENLA       116 TEEDHLREYFEQYGKIEVIEIMTDRGSGKKRGFAFVTFEDHDSVDKIV  
+                     TEE HLR+YFEQYGKIEVIEIMTDRGSGKKRGFAFVTF+DHDSVDKIV  
+                     TEEHHLRDYFEQYGKIEVIEIMTDRGSGKKRGFAFVTFDDHDSVDKIV  
+HSHNRNPA        2150 aggcccagttgctgaaggagaaagcgagaaagtgtgatggcgtggaag  
+                     caaaatgaataaagatattattcaggggaaggtcttctaaaactaatt  
+                     taatcaatttagtaatagtacgtcactcgagctctactcctccgtgtc  
+
+
+ROA1_XENLA       164                               QKYHTVNNHNSQVRKALSK 
+                                                   QKYHTVN HN +VRKALSK 
+                               I:I[att]            QKYHTVNGHNCEVRKALSK 
+HSHNRNPA        2294 AGTAAGTA  Intron 3       TAGTTcatcagagcatggaagcta 
+                      <1-----[2295   :   2387]-1>  aaaactagaagatgactca 
+                                                   gacttgtccctataacgag 
+
+
+ROA1_XENLA       184 QEMASVSGSQR                              RGGSGNYG 
+                     QEMAS S SQR                              R GSGN+G 
+                     QEMASASSSQR          E:G[ggt]            RSGSGNFG 
+HSHNRNPA        2447 cgagagttacaGGTATGCT  Intron 4       AAGGTcagtgatg 
+                     aatcgcccgag <1-----[2481   :   2566]-1>  gggcgatg 
+                     aggtttaccaa                              atttactt 
+
+
+ROA1_XENLA       204 SR--GGFG-NDNFGGRGGNFGGNRGGGGGFGN                  
+                         GGFG NDNFG RGGNF G   G  G+                    
+                     GGRGGGFGGNDNFG-RGGNFSGR--GMYGLST                  
+HSHNRNPA        2593 ggcgggtggagatg cggatagc  gatgtta                  
+                     ggggggtggaaatg gggatggg  gtagtcc                  
+                     tttattctgtccct taaccttt  tgttata                  
+
+
+ROA1_XENLA       233                               GYGGDGYNGDGQLWWQPSL 
+                                                   GYGG G          P   
+                               R:C[tgt]            GYGGGG----------PGY 
+HSHNRNPA        2680 TGTAGTTC  Intron 5       TAGGTgtgggg          cgt 
+                      <1-----[2681   :   3072]-1>  gagggg          cga 
+                                                   ttaacc          ttc 
+
+
+ROA1_XENLA       253 LGWNRGYGAGQGGGYGAGQGGGYGGGGQGGGYGGNGGYDGYN-GGGSGF 
+                      G +RGYG+G           G G G QG GYGG+G YD YN GGG GF 
+                     SGGSRGYGSG-----------GQGYGNQGSGYGGSGSYDSYNNGGGGGF 
+HSHNRNPA        3102 tggaagtgag           gcgtgacgagtggagatgataagggggt 
+                     cgggggaggg           gagagaagggagggggaagaaagggggt 
+                     taacactatt           agttacgctctcgtcctcctccacacct 
+
+
+ROA1_XENLA       301 SGSGG                              NFGSSGGYNDFGNY 
+                      G  G                              NFG  G YNDFGNY 
+                     GGGSG           -:S[agc]           NFGGGGSYNDFGNY 
+HSHNRNPA        3216 gggagAGGTATCCA  Intron 6       AAGCatggggatagtgat 
+                     ggggg  <2-----[3233   :   3809]-2> atgggggaaatgaa 
+                     ctttt                              ttattacctttgtc 
+
+
+ROA1_XENLA       320 NSQSSSNFGPMKGGNYGGGRNSGPYGGG                      
+                     N+QSS NFGPMKGGN+GG R+SGPYGGG                      
+                     NNQSS-NFGPMKGGNFGG-RSSGPYGGG                      
+HSHNRNPA        3853 aactt atgcaaggatgg aatgctggg                      
+                     aaacc atgctaggatgg ggcgcaggg                      
+                     ctgta ttacggaattac actcctcta                      
+
+
+//

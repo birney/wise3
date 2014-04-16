@@ -1,0 +1,37 @@
+
+
+%{
+#include "kmer_.h"
+
+#define MAXKMERTRACE 4
+#define MAXKMERREADPAIR 4
+
+typedef struct KmerTrace {
+  kmer_t forward;
+  kmer_t backward;
+  long int count;
+  boolean is_dead;
+  struct KmerTrace right[MAXKMERTRACE];
+  struct KmerTrace left[MAXKMERTRACE];
+  struct KmerTrace pair[MAXREADPAIR];
+} KmerTrace;
+
+
+typedef struct KmerTraceSet {
+  KmerIndexInterface * kii;
+} KmerTraceSet;
+
+
+%}
+
+
+
+
+%{
+#include "kmer_trace.h"
+
+
+
+
+
+%}

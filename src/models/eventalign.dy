@@ -1,0 +1,95 @@
+
+%{
+#include "dualsignal.h"
+
+
+
+%}
+
+
+
+matrix EventSignalMat
+query  type="SignalSeq*"  name="query"
+target  type="Sequence*"  name="target"
+resource type="SignalMap*" name="sm"
+resource type="Score" name="gap"
+resource type="Score" name="gapext"
+resource type="Score" name="seqdiff_open"
+resource type="Score" name="seqdiff_ext"
+state MATCH offi="1" offj="1" 
+	calc="Score_offset_SignalMap(sm,query,i,target,j)"
+	source DIFF_SEQ
+                calc="0"
+                endsource
+	source MATCH
+		calc="0"
+		endsource
+	source INSERT_SIGNAL
+		calc="0"
+		endsource
+	source DELETE
+		calc="0"
+		endsource
+	source START
+		calc="0"
+		endsource
+	query_label  SIGNAL_MATCH
+	target_label SEQUENCE
+endstate
+state INSERT_SIGNAL offi="0" offj="1"
+	source MATCH
+		calc="gap"
+		endsource
+	source INSERT_SIGNAL
+		calc="gapext"
+		endsource
+	query_label  SIGNAL_DARK
+	target_label  SEQUENCE
+endstate
+state DELETE offi="1" offj="0"
+	source MATCH
+		calc="gap"
+		endsource
+	source DELETE
+		calc="gapext"
+		endsource
+	query_label  SIGNAL_NOVO
+	target_label GAP
+endstate
+state DIFF_SEQ 
+      source MATCH offi="5" offj="5"
+            calc="seqdiff_open + seqdiff_ext"
+            endsource
+      source MATCH offi="6" offj="6"
+            calc="seqdiff_open"
+            endsource
+      source DIFF_SEQ offi="1" offj="0"
+            calc="seqdiff_ext"
+            endsource
+      source DIFF_SEQ offi="0" offj="1"
+            calc="seqdiff_ext"
+            endsource
+      query_label DIFF_SIGNAL 
+      target_label DIFF_SEQ
+endstate
+state START !special !start
+	query_label  START
+	target_label START
+endstate
+state END !special !end
+	source MATCH 
+		calc="0"
+		endsource
+	query_label  END
+	target_label END
+endstate
+endmatrix
+
+
+%{
+#include "eventalign.h"
+
+
+
+%}
+

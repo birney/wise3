@@ -1,0 +1,259 @@
+
+%{
+#include "dyna.h"
+
+#define GraphSeqEdgeLISTLENGTH 32
+
+#define GraphSeqLISTLENGTH 64
+
+#define GraphSeqPathLISTLENGTH 64
+
+%}
+
+
+friend GraphSeqEdge
+
+struct GraphSeqEdgeHolder
+GraphSeqEdge * edge !link
+
+struct GraphSeqEdge
+char * id
+int len
+Sequence * seq
+GraphSeqEdgeHolder ** fivep !list !len="five_"
+GraphSeqEdgeHolder ** threep !list !len="three_"
+
+struct GraphSeq
+GraphSeqEdgeHolder ** free_ends !list !len="free_"
+GraphSeqEdge ** comp !list
+%info
+This represents a graph, or rather a series
+of independent graphs potentially. 
+
+One drawback is that this system assumes there are free ends.
+This is bound to bite me at some point
+%%
+
+
+struct GraphSeqPath 
+GraphSeqEdgeHolder ** edge !list
+
+
+
+%{
+#include "graphseq.h"
+
+
+
+%func
+Writes simple graph format
+%%
+void write_simple_graph(GraphSeq * gs,FILE * ofp)
+{
+  
+  
+  int i;
+  int j;
+
+
+  assert(gs != NULL);
+  assert(ofp != NULL);
+
+  fprintf(ofp,"#SSG 0.1\n");
+  fprintf(ofp,"# Produced by Wise2\n");
+
+  for(i=0;i<gs->len;i++) {
+    fprintf(ofp,"edge %s %d\n",gs->comp[i]->id,gs->comp[i]->len);
+  }
+
+
+
+}
+
+
+
+%func
+Returns the depth of the graph in terms of the number
+of independent paths needed to linearise it. -1 means it
+is not acyclic. 1 means that every branch point comes
+back to 1 node, 2 means that there are two nested branches etc.
+%%
+int acyclic_depth(GraphSeq * gs)
+{
+
+  GraphSeqPath * path;
+
+  assert(gs != NULL);
+
+  assert("Ewan has not written this function yet!");
+  
+}
+
+
+
+
+
+boolean prepare_GraphSeq(GraphSeq * gs)
+{
+  int i;
+  GraphSeqEdgeHolder * th;
+
+  /* check every edge has a sequence */
+
+  for(i=0;i<gs->len;i++) {
+    if( gs->comp[i]->seq == NULL ) {
+      return FALSE;
+    }
+
+    /* if this has a free 5 or 3 end, add it. Add it twice if it has both */
+
+    if( gs->comp[i]->five_len == 0 ) {
+      th = GraphSeqEdgeHolder_alloc();
+      th->edge = gs->comp[i];
+      add_free_GraphSeq(gs,th);
+    }
+
+    if( gs->comp[i]->three_len == 0 ) {
+      th = GraphSeqEdgeHolder_alloc();
+      th->edge = gs->comp[i];
+      add_free_GraphSeq(gs,th);
+    }
+
+  }
+
+  
+  return TRUE;
+
+}
+
+GraphSeq * read_simple_GraphSeq(FILE * ifp)
+{
+  GraphSeq * out;
+  GraphSeqEdge * e;
+  char buffer[MAXLINE];
+  char tempid[MAXLINE];
+  char tempid2[MAXLINE];
+  int first;
+  int second;
+  int templen;
+
+  GraphSeqEdge * one;
+  GraphSeqEdge * two;
+
+  GraphSeqEdgeHolder * th;
+
+  Sequence * seq;
+
+
+
+  assert(ifp != NULL);
+
+  out = GraphSeq_alloc_std();
+
+  while( fgets(buffer,MAXLINE,ifp) != NULL ) {
+    if( buffer[0] == '/' && buffer[1] == '/' ) {
+      break;
+    }
+
+    if( strstartcmp(buffer,"edge") == 0 ) {
+      if( sscanf(buffer,"edge %s %d",tempid,&templen) != 2 ) {
+	warn("Bad edge line %s",buffer);
+      } else {
+        /* not testing that the ID is unique */
+	e = GraphSeqEdge_alloc_std();
+	e->id = stringalloc(tempid);
+	e->len = templen;
+	
+	add_GraphSeq(out,e);
+      }
+    }
+
+    if( strstartcmp(buffer,"join") == 0 ) {
+      if( sscanf(buffer,"join %s %d %s %d",tempid,&first,tempid2,&second) != 4 ) {
+	warn("Bad join line %s",buffer);
+      } else {
+	/* check that both edges exist */
+	one = find_GraphSeqEdge(out,tempid);
+	two = find_GraphSeqEdge(out,tempid2);
+
+	if( one == NULL || two == NULL ) {
+	  warn("Join line %s has unknown edges",buffer);
+	  continue; /* back to while */
+	}
+
+	if( (first != 5 && first != 3) || (second != 5 && second != 3) ) {
+	  warn("Unable to read join line %s, must be 5 or 3",buffer);
+	  continue;
+	}
+
+	th = GraphSeqEdgeHolder_alloc();
+	th->edge = two;
+	if( first == 5 ) {
+	  add_five_GraphSeqEdge(one,th);
+	} else {
+	  add_three_GraphSeqEdge(one,th);
+	}
+
+	th = GraphSeqEdgeHolder_alloc();
+	th->edge = one;
+	if( second == 5 ) {
+	  add_five_GraphSeqEdge(two,th);
+	} else {
+	  add_three_GraphSeqEdge(two,th);
+	}
+
+      }
+    } /* end of join */
+  }
+  
+  while( (seq = read_fasta_Sequence(ifp)) != NULL ) {
+    one = find_GraphSeqEdge(out,seq->name);
+    if( one == NULL ) {
+      warn("No sequence of id %s, not assigning",seq->name);
+    } else {
+      one->seq = seq;
+    }
+  }
+
+
+
+  return(out);
+}
+
+GraphSeqEdgeHolder * find_GraphSeqEdgeHolder(GraphSeqPath * path,char * id)
+{
+  int i;
+
+  assert( path != NULL);
+
+  for(i=0;i<path->len;i++) {
+    if( strcmp(path->edge[i],id) == 0 ) {
+      return(path->edge[i]);
+    }
+  }
+
+  return(NULL);
+
+}
+
+GraphSeqEdge * find_GraphSeqEdge(GraphSeq * gs,char * id) 
+{
+  int i;
+
+
+  assert(gs != NULL);
+
+  for(i=0;i<gs->len;i++) {
+    if( strcmp(gs->comp[i]->id,id) == 0 ) {
+      return(gs->comp[i]);
+    }
+  }
+
+  return(NULL);
+}
+
+
+
+
+
+%}

@@ -1,0 +1,289 @@
+
+%{
+#include "dyna.h"
+#include "wisestring.h"
+
+#define GenoVarSetLISTLENGTH 256
+#define GenoVarChrLISTLENGTH 256
+
+#define HOMO_REF 0
+#define SIMPLE_HET 1
+#define HOMO_ALT 2
+#define GENO_NOT_DEFINED 100
+
+#define SIMPLE_SNP_LOCUS 56
+#define COMPLEX_SNP_LOCUS 58
+
+%}
+
+friend GenoVarChr
+
+struct VarLocus
+GenoVarChr * chr !link
+long int pos
+char * ref_allele
+char * alt_allele
+int locus_type !def="SIMPLE_SNP_LOCUS"
+
+
+struct GenoVarLocus
+VarLocus * var
+char * ind
+
+struct Individual
+char * id
+
+struct GenoVarChr
+char * chr
+GenoVarLocus ** loci !list
+
+struct GenoVarSet
+GenoVarChr ** chr !list
+Individual ** ind !list !len="ind_"
+
+
+%{
+#include "snplocus.h"
+
+
+GenoVarSet * only_simple_snp_loci_GenoVarSet(GenoVarSet * gvs)
+{
+  int i,j;
+  GenoVarSet * out;
+  GenoVarChr * chr;
+
+  out = GenoVarSet_alloc_len(gvs->len);
+  
+  for(i=0;i<gvs->ind_len;i++) {
+    add_ind_GenoVarSet(out,hard_link_Individual(gvs->ind[i]));
+  }
+
+  for(i=0;i<gvs->len;i++) {
+    chr = GenoVarChr_alloc_len(gvs->chr[i]->len);
+    chr->chr = stringalloc(gvs->chr[i]->chr);
+    for(j=0;j<gvs->chr[i]->len;j++) {
+      if( gvs->chr[i]->loci[j]->var->locus_type == SIMPLE_SNP_LOCUS ) {
+	add_GenoVarChr(chr,hard_link_GenoVarLocus(gvs->chr[i]->loci[j]));
+      }
+    }
+    add_GenoVarSet(out,chr);
+  }
+
+  return(out);
+}
+
+int individual_index_from_string_GenoVarSet(GenoVarSet * s, char * strain)
+{
+  int i;
+
+  assert(s != NULL);
+  assert(strain != NULL);
+  
+  for(i=0;i<s->ind_len;i++) {
+    if( strcmp(s->ind[i]->id,strain) == 0 ) {
+      return i;
+    }
+  }
+
+
+  return -1;
+    
+}
+
+int number_of_simple_snp_loci_GenoVarChr(GenoVarChr * c)
+{
+  int i;
+  int out = 0;
+
+  assert(c != NULL);
+
+  for(i=0;i<c->len;i++) {
+    if( c->loci[i]->var->locus_type == SIMPLE_SNP_LOCUS ) {
+      out++;
+    }
+  }
+
+  return(out);
+
+}
+
+void write_sanger_GenoVarSet(GenoVarSet * s,FILE * ofp)
+{
+  int k;
+  int i;
+  int j;
+
+  assert(s != NULL);
+  assert(ofp != NULL);
+
+  fprintf(ofp,"#CHROM\tPOS\tREF");
+  
+  for(j=0;j<s->ind_len;j++) {
+    fprintf(ofp,"\t%s",s->ind[j]->id);
+  }
+  fprintf(ofp,"\n");
+
+  for(k=0;k<s->len;k++) {
+    for(i=0;i<s->chr[k]->len;i++) {
+      auto GenoVarLocus * l;
+      l = s->chr[k]->loci[i];
+      if( l->var->locus_type == COMPLEX_SNP_LOCUS ) {
+	continue;
+      }
+
+
+      fprintf(ofp,"%s\t%ld\t%s",l->var->chr->chr,l->var->pos,l->var->ref_allele);
+
+      for(j=0;j<s->ind_len;j++) {
+	if( l->ind[j] == HOMO_REF ) {
+	  fprintf(ofp,"\t..");
+	} else if( l->ind[j] == HOMO_ALT ) {
+	  fprintf(ofp,"\t%c%c",l->var->alt_allele[0],l->var->alt_allele[0]);
+	} else {
+	  fprintf(ofp,"\t%c%c",l->var->alt_allele[0],l->var->ref_allele[0]);
+	}
+      }
+
+      fprintf(ofp,"\n");
+
+    }
+  }
+  
+
+}
+
+
+GenoVarSet * read_sanger_genotype_file(FILE * ifp)
+{
+  GenoVarSet * out;
+  GenoVarChr * chr = NULL;
+  Individual * ind;
+
+  GenoVarLocus * g;
+  VarLocus * l;
+
+  char buffer[MAXLINE];
+  char minibuf[256];
+  
+  char ** base;
+  char ** brk; 
+
+  int i;
+
+  
+  assert(ifp != NULL);
+
+  fgets(buffer,MAXLINE,ifp);
+
+  if( buffer[0] != '#' ) {
+    warn("Bad file - expecting a header # line first");
+    return NULL;
+  }
+
+  base = brk = breakstring(buffer,spacestr);
+
+  if( strcmp(*brk,"#CHROM") != 0 ) {
+    warn("Bad file - expecting #CHROM");
+    return NULL;
+  }
+  brk++;
+
+  if( strcmp(*brk,"POS") != 0 ) {
+    warn("Bad file - expecting POS");
+    return NULL;
+  }
+  brk++;
+
+  if( strcmp(*brk,"REF") != 0 ) {
+    warn("Bad file - expecting POS");
+    return NULL;
+  }
+  brk++;
+
+  out = GenoVarSet_alloc_std();
+
+  while( *brk != NULL ) {
+    ind = Individual_alloc();
+    ind->id = stringalloc(*brk);
+    
+    add_ind_GenoVarSet(out,ind);
+    brk++;
+  }
+
+  ckfree(base);
+
+
+  while( fgets(buffer,MAXLINE,ifp) != NULL ) {
+
+    base = brk = breakstring(buffer,spacestr);
+  
+    if( chr == NULL || strcmp(chr->chr,*brk) != 0 ) {
+      chr = GenoVarChr_alloc_std();
+      chr->chr = stringalloc(*brk);
+      add_GenoVarSet(out,chr);
+    }
+    
+    g = GenoVarLocus_alloc();
+    l = VarLocus_alloc();
+    l->locus_type = SIMPLE_SNP_LOCUS;
+    g->var = l;
+    g->var->chr = chr;
+    g->ind = calloc(out->ind_len,sizeof(char));
+
+    add_GenoVarChr(chr,g);
+    brk++;
+
+    l->pos = strtol(*brk,NULL,0);
+
+    brk++;
+
+    l->ref_allele = stringalloc(*brk);
+    
+    brk++;
+    i = 0;
+    for(i=0; *brk != NULL; brk++, i++ ) {
+      if( strcmp(*brk,"..") == 0 ) {
+	g->ind[i] = HOMO_REF;
+      } else {
+	auto char alt;
+
+	if( (*brk)[0] == l->ref_allele[0] ) {
+	  alt = (*brk)[1];
+	} else {
+	  alt = (*brk)[0];
+	}
+	
+	if( l->alt_allele != NULL && l->alt_allele[0] != alt ) {
+	  /*warn("Triallelic state. Not good. Unclear what's going to happen");*/
+	  l->locus_type = COMPLEX_SNP_LOCUS;
+	} else {
+	  minibuf[0] = alt;
+	  minibuf[1] = '\0';
+
+	  l->alt_allele = stringalloc(minibuf);
+	}
+
+	if( (*brk)[0] == (*brk)[1] == l->ref_allele[0] ) {
+	  g->ind[i] = HOMO_REF;
+	} else if( (*brk)[0] == (*brk)[1] ) {
+	  g->ind[i] = HOMO_ALT;
+	} else {
+	  g->ind[i] = SIMPLE_HET;
+	}
+
+      }
+    }
+
+    if( i != out->ind_len ) {
+      warn("For %s %ld mismatched index %d vs %d\n",g->var->chr->chr,g->var->pos,i,out->ind_len);
+    }
+  }
+	
+  return(out);
+
+}
+
+
+
+%}
+

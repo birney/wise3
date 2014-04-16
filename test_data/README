@@ -1,0 +1,148 @@
+
+
+Here are some examples that you might want to try out.  The
+executables of course should be installed before hand somewhere in
+your path. Or you can call them as ../bin/genewise etc if you haven't
+installed them.
+
+If you get warnings like
+
+Warning Error
+	Could not open codon.table
+
+then you haven't set the WISECONFIGDIR enviroment variable.
+
+You can set it now by going
+
+setenv WISECONFIGDIR ../wisecfg
+
+
+Print out the wise2 documentation (docs/wise2.ps) and read
+the 'Introduction for the impatient user'
+
+
+Here are some examples:
+
+
+
+
+a) Comparing a protein sequence to a genomic clone
+
+genewise road.pep hngen.fa
+
+(the protein is from drosophila)
+
+b) Comparing a protein HMM to a genomic clone
+
+genewise -hmmer rrm.HMM hngen.fa
+
+c) Try the following options on either a) or b)
+
+	-kbyte XXXX where XXXX is the maximum amount of memory
+on your machine
+
+	-genes - gives gene prediction output
+
+	-trans - gives translations of the predicted genes
+	
+	-embl - give EMBL format Feature table output
+
+	do genewise -help and have a look at other formats you
+could make
+
+d) try
+
+genewise -hmmer rrm.HMM hngen.fa -alg 2193L 
+
+for the most complicated algorithm genewise has to offer.
+
+
+
+For comparisons using ESTs
+
+a) protein to est
+
+estwise road.pep hn_est.fa
+
+Notice the frameshift with the ! in the translation
+
+b) profile HMM to est
+
+estwise -hmmer rrm.HMM hn_est.fa
+
+
+For database comparisons
+
+
+a) an dna sequence against a database of profile HMMs 
+
+estwisedb -pfam db.hmm vav.dna
+
+or
+
+genewisedb -pfam db.hmm vav.dna
+
+
+
+----------------------------------------------------------------
+
+Using dba. dba (Dna Block aligner) compares two DNA sequences
+trying to find co-linear blocks of homology with the potential
+of a small number of gaps but with large intervening sequences
+between the blocks of variable length.
+
+The idea is to be able to find regulatory regions in non coding
+sequences from different species.
+
+For example, using the first intron from keratin18 genes from
+mouse and human gives the following output:
+
+adnah:[/wise2/example]<53>: ../bin/dba keratin_intron.human keratin_intron.mouse
+score = 72.52
+    56    140      109    192   69%  3 gaps, MATCH_A
+   321    395      358    431   89%  1 gaps, MATCH_C
+   401    496      467    559   70%  3 gaps, MATCH_A
+   560    579      593    613   95%  1 gaps, MATCH_D
+   622    691      646    712   80%  5 gaps, MATCH_B
+
+This indicates that there are 5 blocks of homology. The blocks are
+parameterised into homology levels being (when run using the default
+parameters)
+
+A  approx 60-70% identity
+B  approx 70-80% identity
+C  approx 80-90% identity
+D  approx 90-100% identity
+
+The approximation is due to the fact that the models are parameterised
+probabilistically with gaps being taken into account. The probabilites
+for the different blocks are by default
+
+A 0.65
+B 0.75
+C 0.85
+D 0.95
+
+(each probability representing the probability of finding a idenity
+pair in the block).
+
+By and large blocks around the identity range will fall into the
+correct homology block, but the interplay of the parameters about
+block probability means that the calculated %idenity need not fall
+into the expected block type.
+
+
+The -align option is very verbose and probably not that useful.
+
+
+
+dba has been intergrated into the alfresco java viewer. In alfresco
+you can interactively decide what regions to compare and shows the
+results integrated with other analysis, eg repeats. Alfresco (and
+dba) was written by Niclas Jareborg. A web site for it is at
+http://www.sanger.ac.uk/Software/Alfresco
+
+
+
+
+

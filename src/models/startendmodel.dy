@@ -1,0 +1,142 @@
+
+%{
+#include "dyna.h"
+
+%}
+
+
+struct StartEndModelMode
+char * style
+int i_ramp
+int j_ramp
+
+struct StartEndModel
+int i_len
+int j_len
+Probability * i_entry 
+Probability * j_entry 
+
+
+struct StartEndScore
+int i_len
+int j_len
+Score * i_entry
+Score * j_entry
+
+
+%{
+#include "startendmodel.h"
+
+
+void free_Probability(Probability * p)
+{
+  return(free(p));
+}
+
+void free_Score(Score * s)
+{
+  return(free(s));
+}
+
+void show_help_StartEndMode(FILE *ofp)
+{
+
+  assert(ofp != NULL);
+
+  fprintf(ofp,"Start End Mode options\n");
+  fprintf(ofp,"  -startendstyle  [local/edge/ramp] style of start/end mode\n");
+  fprintf(ofp,"  -se_query_ramp  [5]  size of ramp in query\n");
+  fprintf(ofp,"  -se_target_ramp [5]  size of ramp in target\n");
+
+}
+
+StartEndModel * StartEndModel_from_Mode(StartEndModelMode * sem,int i,int j);
+{
+  StartEndModel * out;
+
+  assert(sem != NULL);
+  assert(i > 0 );
+  assert(j > 0 );
+
+  out = StartEndModel_alloc();
+  out->i_entry = calloc(i,sizeof(Probability));
+  out->j_entry = calloc(j,sizeof(Probability));
+
+  if( strcmp(sem->style,"local") == 0 ) {
+    
+  }
+
+
+
+
+}
+
+
+StartEndModelMode * new_StartEndModelMode_from_argv(int * argc,char ** argv)
+{
+  StartEndModelMode * out;
+  char * style;
+
+  style = strip_out_assigned_argument(argc,argv,"startendstyle");
+
+  out = StartEndModelMode_alloc();
+
+  if( style != NULL ) {
+    if( strcmp(style,"edge") == 0 ) {
+      out->style = stringalloc(style);
+    } else if ( strcmp(style,"local") == 0 ) {
+      out->style = stringalloc(style);
+    } else if ( strcmp(style,"ramp") == 0 ) {
+      out->style = stringalloc(style);
+    } else {
+      warn("Unrecognised start/end style");
+      return NULL;
+    }
+  } else {
+    out->style = stringalloc("local");
+  }
+
+    
+  out->i_ramp = 5;
+  out->j_ramp = 5;
+
+  strip_out_integer_argument(argc,argv,"se_query_ramp",&out->i_ramp);
+  strip_out_integer_argument(argc,argv,"se_target_ramp",&out->j_ramp);
+
+  return(out);
+
+}
+
+
+StartEndScore * StartEndScore_from_StartEndModel(StartEndModel * sem)
+{
+  StartEndScore * out;
+
+  int i;
+
+  assert(sem != NULL);
+
+  out = StartEndScore_alloc();
+
+  out->i_entry = calloc(sem->i_len,sizeof(Score));
+  out->j_entry = calloc(sem->j_len,sizeof(Score));
+
+  out->i_len = sem->i_len;
+  out->j_len = sem->j_len;
+
+  for(i=0;i<out->i_len;i++) {
+    out->i_entry[i] = Probability2Score(sem->i_entry[i]);
+  }
+
+  for(i=0;i<out->j_len;i++) {
+    out->j_entry[i] = Probability2Score(sem->j_entry[i]);
+  }
+
+  return(out);
+
+}
+
+
+
+
+%}

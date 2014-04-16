@@ -1,0 +1,157 @@
+Wise2 - database searching mode
+Program: genewisedb version: $Name:  $ released: unreleased
+This program is freely distributed under a Gnu Public License.
+   See -version for more info on copyright
+Bugs and credits to Ewan Birney <birney@sanger.ac.uk>
+-----------------------------------------------------
+
+Algorithm type:        GeneWise
+Search algorithm used: 623
+Implementation:        Single Threaded processor (serial)
+Search mode:           Single genomic vs protein db
+Protein info from:     rrm.HMM
+Dna info from:         short.dna
+Start/End (protein)    default
+Gene Paras:            human.gf
+Codon Table:           codon.table
+Subs error:            1e-05
+Indel error:           1e-05
+Model splice?          model
+Model codon bias?      flat
+Model intron bias?     tied
+Null model             syn
+Alignment Alg          623L
+
+#
+#WARNING!
+#
+# Your alignment algorithm is different from your search algorithm.
+# This is probably quite sensible but will lead to differing scores.
+# Use the search score as an indicator of the significance of the match
+# Read the docs for more information
+#
+
+
+#High Score list
+#Protein ID                 DNA Str  ID                        Bits Evalue
+--------------------------------------------------------------------------
+Protein SEED                DNA [+] HSHNCPA1                 101.36
+
+
+#Alignments
+-----------------------------------------------------------------------
+
+>Results for SEED vs HSHNCPA1 (forward) [0]
+
+genewisedb output
+Score 93.14 bits over entire alignment.
+This will be different from per-alignment scores. See manual for details
+For computer parsable output, try genewisedb -help or read the manual
+Scores as bits over a synchronous coding model
+
+                                                                       
+                                                                       
+                                                                       
+                                                                       
+                                                                       
+                     Alignment 1 Score 93.14 (Bits)                    
+
+
+SEED               1 LFVGNLPPDVTEEDLKDLFSKFGPIVSIKIVRDIIEKPKETGKSKGFAF 
+                      FVG++ +D+ E+ L+D+F+++G+I+ I+I++D     +  GK +GFA+ 
+                     IFVGGIKEDTEEHHLRDYFEQYGKIEVIEIMTD-----RGSGKKRGFAx 
+HSHNCPA1          17 atgggaaggaggcccagttgctgaaggagaaag     cgagaaagtgt 
+                     tttggtaaacaaaatgaataaagatattattca     ggggaaggtct 
+                     atttctaactaatcaatttagtaatagtacgtc     actcgagctcN 
+
+
+SEED              50 VEFESEEDAEKALEALNGKELGGRKLRV                      
+                     V+F+++++++K +     ++++G++++V                      
+                     VTFDDHDSVDKIVI-QKYHTVNGHNCEV                      
+HSHNCPA1         149 gatggcgtggaaga catcagagcatgg                      
+                     tctaaaactaattt aaaactagaagat                      
+                     actcctccgtgtct gacttgtccctat                      
+
+
+//
+0.00 [-1:-1 "LOOP_STATE" 0],[0:15 "RANDOM_SEQUENCE" 0]
+-5.83 [-1:0 "MATCH_STATE" -202],[15:18 "CODON" -202]
+3.20 [0:1 "MATCH_STATE" 111],[18:21 "CODON" 111]
+3.12 [1:2 "MATCH_STATE" 108],[21:24 "CODON" 108]
+2.45 [2:3 "MATCH_STATE" 85],[24:27 "CODON" 85]
+1.79 [3:4 "MATCH_STATE" 62],[27:30 "CODON" 62]
+0.63 [4:5 "MATCH_STATE" 22],[30:33 "CODON" 22]
+-0.55 [5:6 "MATCH_STATE" -19],[33:36 "CODON" -19]
+0.63 [6:7 "MATCH_STATE" 22],[36:39 "CODON" 22]
+2.39 [7:8 "MATCH_STATE" 83],[39:42 "CODON" 83]
+1.73 [8:9 "MATCH_STATE" 60],[42:45 "CODON" 60]
+-1.18 [9:10 "MATCH_STATE" -41],[45:48 "CODON" -41]
+2.48 [10:11 "MATCH_STATE" 86],[48:51 "CODON" 86]
+0.49 [11:12 "MATCH_STATE" 17],[51:54 "CODON" 17]
+-0.92 [12:13 "MATCH_STATE" -32],[54:57 "CODON" -32]
+2.83 [13:14 "MATCH_STATE" 98],[57:60 "CODON" 98]
+1.79 [14:15 "MATCH_STATE" 62],[60:63 "CODON" 62]
+2.11 [15:16 "MATCH_STATE" 73],[63:66 "CODON" 73]
+1.18 [16:17 "MATCH_STATE" 41],[66:69 "CODON" 41]
+4.21 [17:18 "MATCH_STATE" 146],[69:72 "CODON" 146]
+0.95 [18:19 "MATCH_STATE" 33],[72:75 "CODON" 33]
+1.70 [19:20 "MATCH_STATE" 59],[75:78 "CODON" 59]
+2.83 [20:21 "MATCH_STATE" 98],[78:81 "CODON" 98]
+3.49 [21:22 "MATCH_STATE" 121],[81:84 "CODON" 121]
+1.33 [22:23 "MATCH_STATE" 46],[84:87 "CODON" 46]
+2.71 [23:24 "MATCH_STATE" 94],[87:90 "CODON" 94]
+1.18 [24:25 "MATCH_STATE" 41],[90:93 "CODON" 41]
+-2.39 [25:26 "MATCH_STATE" -83],[93:96 "CODON" -83]
+2.22 [26:27 "MATCH_STATE" 77],[96:99 "CODON" 77]
+0.52 [27:28 "MATCH_STATE" 18],[99:102 "CODON" 18]
+2.16 [28:29 "MATCH_STATE" 75],[102:105 "CODON" 75]
+1.93 [29:30 "MATCH_STATE" 67],[105:108 "CODON" 67]
+0.78 [30:31 "MATCH_STATE" 27],[108:111 "CODON" 27]
+2.97 [31:32 "MATCH_STATE" 103],[111:114 "CODON" 103]
+-0.03 [32:33 "DELETE_STATE" -1],[114:114 "INSERT" -1]
+-0.06 [33:34 "DELETE_STATE" -2],[114:114 "INSERT" -2]
+-0.03 [34:35 "DELETE_STATE" -1],[114:114 "INSERT" -1]
+-0.03 [35:36 "DELETE_STATE" -1],[114:114 "INSERT" -1]
+-0.03 [36:37 "DELETE_STATE" -1],[114:114 "INSERT" -1]
+0.66 [37:38 "MATCH_STATE" 23],[114:117 "CODON" 23]
+-0.61 [38:39 "MATCH_STATE" -21],[117:120 "CODON" -21]
+-0.03 [39:40 "MATCH_STATE" -1],[120:123 "CODON" -1]
+2.51 [40:41 "MATCH_STATE" 87],[123:126 "CODON" 87]
+1.93 [41:42 "MATCH_STATE" 67],[126:129 "CODON" 67]
+-0.43 [42:43 "MATCH_STATE" -15],[129:132 "CODON" -15]
+2.28 [43:44 "MATCH_STATE" 79],[132:135 "CODON" 79]
+3.23 [44:45 "MATCH_STATE" 112],[135:138 "CODON" 112]
+3.06 [45:46 "MATCH_STATE" 106],[138:141 "CODON" 106]
+2.51 [46:47 "MATCH_STATE" 87],[141:144 "CODON" 87]
+3.23 [47:48 "MATCH_STATE" 112],[144:147 "CODON" 112]
+3.29 [48:49 "MATCH_STATE" 114],[147:150 "CODON" 114]
+1.33 [49:50 "MATCH_STATE" 46],[150:153 "CODON" 46]
+4.01 [50:51 "MATCH_STATE" 139],[153:156 "CODON" 139]
+1.15 [51:52 "MATCH_STATE" 40],[156:159 "CODON" 40]
+1.93 [52:53 "MATCH_STATE" 67],[159:162 "CODON" 67]
+1.50 [53:54 "MATCH_STATE" 52],[162:165 "CODON" 52]
+1.62 [54:55 "MATCH_STATE" 56],[165:168 "CODON" 56]
+1.27 [55:56 "MATCH_STATE" 44],[168:171 "CODON" 44]
+0.03 [56:57 "MATCH_STATE" 1],[171:174 "CODON" 1]
+1.01 [57:58 "MATCH_STATE" 35],[174:177 "CODON" 35]
+2.34 [58:59 "MATCH_STATE" 81],[177:180 "CODON" 81]
+-0.12 [59:60 "MATCH_STATE" -4],[180:183 "CODON" -4]
+1.59 [60:61 "MATCH_STATE" 55],[183:186 "CODON" 55]
+-0.78 [61:62 "MATCH_STATE" -27],[186:189 "CODON" -27]
+-2.37 [62:63 "DELETE_STATE" -82],[189:189 "INSERT" -82]
+-0.43 [63:64 "MATCH_STATE" -15],[189:192 "CODON" -15]
+-0.35 [64:65 "MATCH_STATE" -12],[192:195 "CODON" -12]
+-0.61 [65:66 "MATCH_STATE" -21],[195:198 "CODON" -21]
+0.98 [66:67 "MATCH_STATE" 34],[198:201 "CODON" 34]
+0.72 [67:68 "MATCH_STATE" 25],[201:204 "CODON" 25]
+1.27 [68:69 "MATCH_STATE" 44],[204:207 "CODON" 44]
+1.70 [69:70 "MATCH_STATE" 59],[207:210 "CODON" 59]
+2.74 [70:71 "MATCH_STATE" 95],[210:213 "CODON" 95]
+1.90 [71:72 "MATCH_STATE" 66],[213:216 "CODON" 66]
+0.23 [72:73 "MATCH_STATE" 8],[216:219 "CODON" 8]
+0.92 [73:74 "MATCH_STATE" 32],[219:222 "CODON" 32]
+0.35 [74:75 "MATCH_STATE" 12],[222:225 "CODON" 12]
+2.77 [75:76 "MATCH_STATE" 96],[225:228 "CODON" 96]
+0.00 [76:0 "LOOP_STATE" 0],[228:413 "RANDOM_SEQUENCE" 0]
+0.00 [0:0 "END" 0],[413:414 "END" 0]
+//

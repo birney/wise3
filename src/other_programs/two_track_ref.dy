@@ -1,0 +1,58 @@
+
+%{
+#include "two_track.h"
+
+
+%}
+
+
+matrix TwoTrackRefSingleState
+query type="TwoTrack*" name="query"
+target type="DNA" name="target"
+resource type="Score" name="insert"
+resource type="Score" name="delete"
+state MATCH 
+      calc="query->unit[i]->emission[DNA_BASE(target,j)]"
+      source MATCH offi="1" offj="1"
+      	     calc="0"
+	     query_label MATCH
+	     target_label MATCH
+	     endsource
+      source MATCH offi="0" offj="1"
+             calc="insert"
+	     query_label INSERT
+	     target_label INSERT
+             endsource
+      source MATCH offi="1" offj="0"
+             calc="delete"
+	     query_label DELETE
+	     target_label DELETE
+             endsource
+      source START offi="1" offj="1"  !top
+             calc="0"
+	     query_label MATCH
+	     target_label MATCH
+             endsource
+endstate
+state START !special !start
+endstate
+state END !special !end
+       source MATCH !bottom
+            calc="0"
+            endsource
+       query_label MATCH
+       target_label MATCH
+endstate
+endmatrix
+
+
+
+
+%{
+#include "two_track_ref.h"
+
+
+
+
+
+%}

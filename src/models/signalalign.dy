@@ -1,0 +1,167 @@
+
+%{
+#include "dualsignal.h"
+
+
+
+%}
+
+
+
+matrix SimpleSignalMat
+query  type="SignalSeq*"  name="query"
+target  type="Sequence*"  name="target"
+resource type="SignalMap*" name="sm"
+resource type="Score" name="gap"
+resource type="Score" name="gapext"
+resource type="Score" name="seqdiff_open"
+resource type="Score" name="seqdiff_ext"
+state MATCH offi="1" offj="1" 
+	calc="Score_offset_SignalMap(sm,query,i,target,j)"
+	source DIFF_SEQ
+                calc="0"
+                endsource
+	source MATCH
+		calc="0"
+		endsource
+	source INSERT_SIGNAL
+		calc="0"
+		endsource
+	source DELETE
+		calc="0"
+		endsource
+	source START
+		calc="0"
+		endsource
+	query_label  SIGNAL_MATCH
+	target_label SEQUENCE
+endstate
+state INSERT_SIGNAL offi="0" offj="1"
+	source MATCH
+		calc="gap"
+		endsource
+	source INSERT_SIGNAL
+		calc="gapext"
+		endsource
+	query_label  SIGNAL_DARK
+	target_label  SEQUENCE
+endstate
+state DELETE offi="1" offj="0"
+	source MATCH
+		calc="gap"
+		endsource
+        source DELETE offi="1" offj="1"
+               calc="gapext"
+               endsource
+        source DELETE offi="0" offj="1"
+               calc="gapext"
+                endsource  
+	source DELETE
+		calc="gapext"
+		endsource
+	query_label  SIGNAL_NOVO
+	target_label GAP
+endstate
+state DIFF_SEQ 
+      source MATCH offi="5" offj="5"
+            calc="seqdiff_open + seqdiff_ext"
+            endsource
+      source MATCH offi="6" offj="6"
+            calc="seqdiff_open"
+            endsource
+      source DIFF_SEQ offi="1" offj="0"
+            calc="seqdiff_ext"
+            endsource
+      source DIFF_SEQ offi="0" offj="1"
+            calc="seqdiff_ext"
+            endsource
+      query_label DIFF_SIGNAL 
+      target_label DIFF_SEQ
+endstate
+state START !special !start
+	query_label  START
+	target_label START
+endstate
+state END !special !end
+	source MATCH 
+		calc="0"
+		endsource
+	query_label  END
+	target_label END
+endstate
+endmatrix
+
+
+%{
+#include "signalalign.h"
+
+
+
+void show_alignment_with_fit_SimpleSignalMat(AlnBlock * alb,SignalEventList * sel,Sequence * comp,SignalMap * sm,FILE * ofp)
+{
+  AlnColumn * alc;
+  int i = 1;
+  
+  double obs;
+  double pred;
+
+  kmer_t kmer;
+
+
+  assert(alb != NULL);
+  assert(sel != NULL);
+  assert(comp != NULL);
+  assert(ofp != NULL);
+
+
+
+  fprintf(ofp,"AlnNum\tSigLabel\tSeqLabel\tRawScore\tBitsScore\tSigStart\tSigEnd\tSigMean\tSigStdev\tSigBase\tSigKmer\tSigTimeStart\tSigTimeLen\tSignalFit\tSeqStart\tSeqEnd\tSeqBase\tModelMean\n");
+  for(alc=alb->start;alc != NULL;alc = alc->next) {
+
+
+    if( strcmp(alc->alu[0]->text_label,"END") == 0 ) {
+      break;
+    }
+
+    fprintf(ofp,"%d\t",i);
+
+    
+    kmer = forward_dna_number_from_string(comp->seq+alc->alu[1]->end - sm->kbasis,sm->kbasis);
+
+    obs = sel->event[alc->alu[0]->end]->mean;
+    pred = sm->comp[kmer]->mean;
+
+
+    fprintf(ofp,"%s\t%s\t",alc->alu[0]->text_label,alc->alu[1]->text_label);
+
+    fprintf(ofp,"%d\t%f\t",alc->alu[0]->score[0],Score2Bits(alc->alu[0]->score[0]));
+    
+
+    fprintf(ofp,"%d\t%d\t%f\t%f\t%c\t%s\t%f\t%f\t",
+	    alc->alu[0]->start,
+	    alc->alu[0]->end,
+	    sel->event[alc->alu[0]->end]->mean,
+	    sel->event[alc->alu[0]->end]->std,
+	    sel->event[alc->alu[0]->end]->base,
+	    sel->event[alc->alu[0]->end]->kmer,
+	    sel->event[alc->alu[0]->end]->time_pos,
+	    sel->event[alc->alu[0]->end]->time_length);
+
+    fprintf(ofp,"%f\t",(obs-pred)/sm->comp[kmer]->sd);
+
+    fprintf(ofp,"%d\t%d\t%c\t%f",
+	    alc->alu[1]->start,
+	    alc->alu[1]->end,
+	    comp->seq[alc->alu[1]->start],
+	    pred);
+      
+    fprintf(ofp,"\n");
+	    
+
+    i++;
+  }
+
+}
+
+%}
+

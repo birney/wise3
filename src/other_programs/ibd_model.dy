@@ -1,0 +1,209 @@
+
+%{
+#include "snplocus.h"
+#include "ancestral.h"
+
+#include "mousethreestate.h"
+
+#define TargetMatchIBD(j) (mat->target->match[j] == 1 ? mat->query->ibd_match : mat->query->ibd_mismatch)
+
+#define TargetMatchDIFF(j) (mat->target->match[j] == 1 ? mat->query->diff_match : mat->query->diff_mismatch)
+
+%}
+
+struct PairMatch
+long int len
+char * match
+
+
+struct GenomePairPara
+Score ibd_match
+Score ibd_mismatch
+Score diff_match
+Score diff_mismatch 
+Score extend_ibd
+Score bswitch_ibd
+Score extend_diff
+Score bswitch_diff
+int len
+
+
+matrix MousePairMatch
+query type="GenomePairPara*" name="query" field:len="len"
+target type="PairMatch*" name="target"
+state IBD offi="0" offj="1"
+      source IBD
+      calc="query->extend_ibd"
+      endsource
+      source DIFF
+      calc="query->bswitch_diff"
+      endsource
+      source Start !left
+      calc="0"
+      endsource
+      calc="TargetMatchIBD(j)"
+      query_label Q
+      target_label IBD
+endstate
+state DIFF offi="0" offj="1"
+      source DIFF
+      calc="query->extend_diff"
+      endsource
+      source IBD
+      calc="query->bswitch_ibd"
+      endsource
+      source Start !left
+      calc="0"
+      endsource
+      calc="TargetMatchDIFF(j)"
+      query_label Q
+      target_label DIFF
+endstate
+state Start !start !special
+endstate 
+state End !end !special
+      source IBD !right
+      calc="0"
+      endsource
+      source DIFF !right
+      calc="0"
+      endsource
+       query_label END
+      target_label END
+endstate
+endmatrix
+
+
+
+%{
+#include "ibd_model.h"
+
+
+void dump_naive_AlnBlock_IBD(char * strain_a,char * strain_b,GenoVarChr * chr,AlnBlock * alb,FILE * ofp)
+{
+  AlnColumn * bstart;
+  AlnColumn * e;
+  int j;
+  int jj;
+
+  e = bstart = alb->start;
+  j = 0;
+  jj = 0;
+
+  while( e != NULL ) {
+    e = e->next;
+    jj++;
+
+    if( strcmp(e->alu[1]->text_label,bstart->alu[1]->text_label) == 0 ) {
+      continue;
+    }
+
+
+
+    /* break */
+
+    fprintf(ofp,"%s\t%ld\t%ld\t%d\t%d\t%s\t%s\t%s\n",
+	    chr->chr,
+	    chr->loci[j]->var->pos,
+	    chr->loci[jj]->var->pos,
+	    j,
+	    jj,
+	    strain_a,
+	    strain_b,
+	    bstart->alu[1]->text_label);
+
+    if( strcmp(e->alu[0]->text_label,"END") == 0 ) {
+      break;
+    }
+    
+    bstart = e;
+    j = jj;
+  }
+  
+  
+
+
+}
+
+PairMatch * new_PairMatch(GenoVarSet * set,GenoVarChr * chr,char * strain_a,char * strain_b)
+{
+  PairMatch * out;
+  int index_a;
+  int index_b;
+
+  int i;
+
+  index_a = individual_index_from_string_GenoVarSet(set,strain_a);
+  assert(index_a != -1);
+
+  index_b = individual_index_from_string_GenoVarSet(set,strain_b);
+  assert(index_b != -1);
+
+  
+
+  out = PairMatch_alloc();
+
+
+  out->match = calloc(chr->len,sizeof(char));
+  out->len = chr->len;
+
+  for(i=0;i<chr->len;i++) {
+    if( chr->loci[i]->ind[index_a] == chr->loci[i]->ind[index_b] ) {
+      out->match[i] = 1;
+    } else {
+      out->match[i] = 0;
+    }
+  }
+  
+  return(out);
+
+}
+
+
+GenomePairPara * new_GenomePairPara_null(Probability ibd_mismatch,Probability diff_mismatch,Probability ibd_switch,Probability diff_switch)
+{
+  GenomePairPara * out;
+
+
+  out = GenomePairPara_alloc();
+
+  out->ibd_mismatch = Probability2Score(1);
+  out->ibd_match = Probability2Score(1);
+  out->diff_mismatch = Probability2Score(diff_mismatch/ ibd_mismatch);
+  out->diff_match = Probability2Score((1.0 - diff_mismatch)/(1.0 - ibd_mismatch));
+
+  out->bswitch_ibd = Probability2Score(ibd_switch);
+  out->extend_ibd  = Probability2Score(1.0 - ibd_switch);
+
+
+  out->bswitch_diff = Probability2Score(diff_switch);
+  out->extend_diff  = Probability2Score(1.0 - diff_switch);
+  out->len = 1;
+  return(out);
+
+}
+
+GenomePairPara * new_GenomePairPara(Probability ibd_mismatch,Probability diff_mismatch,Probability ibd_switch,Probability diff_switch)
+{
+  GenomePairPara * out;
+
+
+  out = GenomePairPara_alloc();
+
+  out->ibd_mismatch = Probability2Score(ibd_mismatch);
+  out->ibd_match = Probability2Score(1.0 - ibd_mismatch);
+  out->diff_mismatch = Probability2Score(diff_mismatch);
+  out->diff_match = Probability2Score(1.0 - diff_mismatch);
+
+  out->bswitch_ibd = Probability2Score(ibd_switch);
+  out->extend_ibd  = Probability2Score(1.0 - ibd_switch);
+
+
+  out->bswitch_diff = Probability2Score(diff_switch);
+  out->extend_diff  = Probability2Score(1.0 - diff_switch);
+  out->len = 1;
+  return(out);
+
+}
+
+%}

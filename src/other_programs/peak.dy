@@ -1,0 +1,263 @@
+
+%{
+#include "dyna.h"
+
+#define PeakListLISTLENGTH 5000
+#define MergedPeakLISTLENGTH 20
+#define MergedPeakListLISTLENGTH 5000
+
+#define ListofPeakListLISTLENGTH 20
+%}
+
+
+struct PeakPara
+char * assay_name
+
+
+struct Peak
+char * chr
+int start
+int end
+double score
+char * id
+PeakPara * para !link
+
+struct PeakList
+PeakPara * para
+Peak ** peak !list 
+
+struct ListofPeakList
+PeakList ** set !list
+
+struct MergedPeak
+char * chr
+int start
+int end
+Peak ** comp !list
+
+struct MergedPeakList
+MergedPeak ** peak !list
+
+%{
+#include "peak.h"
+
+%func
+writes tagged peak list
+%%
+void write_tagged_MergedPeakList(MergedPeakList * mpl,FILE * ofp)
+{
+  int i;
+  int j;
+  int count = 1;
+ 
+  for(i=0;i<mpl->len;i++) {
+    fprintf(ofp,"%s\t%d\t%d\tmerged.%d",mpl->peak[i]->chr,mpl->peak[i]->start,mpl->peak[i]->end,count);
+    for(j=0;j<mpl->peak[i]->len;j++) {
+      fprintf(ofp,"\t%s=%f",mpl->peak[i]->comp[j]->para->assay_name,mpl->peak[i]->comp[j]->score);
+    }
+    fprintf(ofp,"\n");
+    count++;
+  }
+      
+
+}
+
+
+%func
+makes a merged peak list (single linkage clustering)
+from a list of peaklists
+%%
+MergedPeakList * make_MergedPeakList(ListofPeakList * lop,int stderr_logging_level)
+{
+  MergedPeakList * out;
+  MergedPeak * p;
+
+  PeakList * temp;
+  int i;
+  int j;
+  int count  = 0;
+ 
+  assert(lop != NULL);
+
+  temp = PeakList_alloc_std();
+
+  for(i=0;i<lop->len;i++) {
+    for(j=0;j<lop->set[i]->len;j++) {
+      add_PeakList(temp,hard_link_Peak(lop->set[i]->peak[j]));
+    }
+  }
+
+  fprintf(stderr,"Sorting\n");
+  sort_PeakList_by_chr_start(temp);
+
+  out = MergedPeakList_alloc_std();
+  
+  /* first peak into merged set */
+  p = MergedPeak_alloc_std();
+  p->chr = stringalloc(temp->peak[0]->chr);
+  p->start = temp->peak[0]->start;
+  p->end   = temp->peak[0]->end;
+  add_MergedPeak(p,hard_link_Peak(temp->peak[0]));
+  add_MergedPeakList(out,p);
+
+  for(i=1;i<temp->len;i++) {
+    if( count %1000 == 0  && stderr_logging_level > 0 ) {
+    	fprintf(stderr,"Merging %s %d-%d\n",temp->peak[i]->chr,temp->peak[i]->start,temp->peak[i]->end);
+    }			
+    count++;
+    if( strcmp(temp->peak[i]->chr,p->chr) != 0 ||
+	temp->peak[i]->start > p->end ) {
+      /* new merged peak */
+      
+        p = MergedPeak_alloc_std();
+	p->chr = stringalloc(temp->peak[i]->chr);
+	p->start = temp->peak[i]->start;
+	p->end   = temp->peak[i]->end;
+	add_MergedPeak(p,hard_link_Peak(temp->peak[i]));
+	add_MergedPeakList(out,p);
+    } else {
+      /* merge in */
+      if( p->end < temp->peak[i]->end ) {
+	p->end = temp->peak[i]->end;
+      }
+      add_MergedPeak(p,hard_link_Peak(temp->peak[i]));
+    }
+  }
+
+  free_PeakList(temp);
+
+  return out;
+}
+
+%func
+sorts a peak list
+%%
+void sort_PeakList_by_chr_start(PeakList * pl)
+{
+
+  sort_PeakList(pl,&comp_Peak);
+
+}
+
+%func
+internal for sorting
+!internal
+%%
+int comp_Peak(Peak * one,Peak * two ) 
+{
+  int cmp;
+
+  if( (cmp = strcmp(one->chr,two->chr)) == 0 ) {
+    return one->start - two->start;
+  } else {
+    return cmp;
+  }
+}
+
+
+%func
+creates a peak list from a 4 column bed file
+%%
+PeakList * read_bed_PeakList(FILE * ifp,char * assay_name)
+{
+  PeakPara * para;
+  PeakList * out;
+  Peak * p;
+  char line[MAXLINE];
+
+  int start;
+  int end;
+  char chr[MAXLINE];
+  char id[MAXLINE];
+  float score;
+
+  assert(assay_name != NULL);
+  assert(ifp != NULL);
+
+  out = PeakList_alloc_std();
+  
+  para = PeakPara_alloc();
+  para->assay_name = stringalloc(assay_name);
+  
+  while( fgets(line,MAXLINE,ifp) ) {
+    if( line[0] == '#' ) {
+      continue;
+    }
+    sscanf(line,"%s %d %d %s %f",chr,&start,&end,id,&score);
+    
+    p = Peak_alloc();
+    p->chr = stringalloc(chr);
+    p->id = stringalloc(id);
+    p->start = start;
+    p->end   = end;
+    p->score = (double) score;
+    p->para = para;
+
+    add_PeakList(out,p);
+  }
+
+
+  return out;
+}
+
+
+%func
+creates a peak list from a 4 column npf file
+%%
+PeakList * read_npf_PeakList(FILE * ifp,char * assay_name)
+{
+  PeakPara * para;
+  PeakList * out;
+  Peak * p;
+  char line[MAXLINE];
+
+  int start;
+  int end;
+  char chr[MAXLINE];
+  char str;
+  int phase;
+  char id[MAXLINE];
+  float score;
+
+  assert(assay_name != NULL);
+  assert(ifp != NULL);
+
+  out = PeakList_alloc_std();
+  
+  para = PeakPara_alloc();
+  para->assay_name = stringalloc(assay_name);
+  
+  while( fgets(line,MAXLINE,ifp) ) {
+    if( line[0] == '#' ) {
+      continue;
+    }
+    sscanf(line,"%s %d %d %s %d %c %f",chr,&start,&end,id,&phase,&str,&score);
+    
+    p = Peak_alloc();
+    p->chr = stringalloc(chr);
+    p->id = stringalloc(id);
+    p->start = start;
+    p->end   = end;
+    p->score = (double) score;
+    p->para = para;
+
+    add_PeakList(out,p);
+  }
+
+
+  return out;
+}
+
+%func
+writes out a 4-column bed
+%%
+void write_4col_bed_PeakList(PeakList * pl,FILE * out)
+{
+  int i;
+
+  for(i=0;i<pl->len;i++) {
+    fprintf(out,"%s\t%d\t%d\t%s\t%f\n",pl->peak[i]->chr,pl->peak[i]->start,pl->peak[i]->end,pl->peak[i]->id,pl->peak[i]->score);
+  }
+
+}
+%}

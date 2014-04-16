@@ -1,0 +1,114 @@
+
+
+%{
+#include "dyna.h"
+
+
+%}
+
+
+
+
+
+matrix FoldBackMat
+query type="DNA" name="query"
+target type="DNA" name="target"
+resource type="DNACOMPMAT" name="comp"
+resource type="DNACOMPMAT" name="stutter"
+resource name="qgap"  type="Score"
+resource name="qext"  type="Score"
+resource name="tgap"  type="Score"
+resource name="text"  type="Score"
+resource name="lgap" type="Score"
+resource name="lext"  type="Score"
+resource name="stgap" type="Score"
+state MATCH offi="1" offj="1"
+   calc="DNABASEMATCH(comp,DNA_BASE(query,i),DNA_BASE(target,j))"
+   source MATCH 
+     calc="0"
+     endsource
+   source INSERT 
+     calc="0"
+     endsource
+   source DELETE
+     calc="0"
+     endsource
+   source START 
+     calc="0"
+     endsource
+   source STUTTER
+     calc="0"
+     endsource
+   query_label SEQUENCE   
+   target_label SEQUENCE
+endstate
+state STUTTER offi="1" offj="1"
+   calc="DNABASEMATCH(comp,DNA_BASE(query,i),DNA_BASE(target,j))"
+   source STUTTER
+     calc="0"
+     endsource
+   source STUTTER offi="0"
+     calc="stgap"
+     query_label INSERT
+     endsource
+   source STUTTER offj="0"
+     calc="stgap"
+     target_label INSERT
+     endsource
+   source MATCH
+     calc="0"
+     endsource
+   query_label SEQUENCE   
+   target_label SEQUENCE
+endstate
+state INSERT offi="0" offj="1"
+   source MATCH
+     calc="qgap"
+     endsource
+   source INSERT
+     calc="qext"
+     endsource
+   query_label INSERT
+   target_label SEQUENCE
+endstate
+state DELETE offi="1" offj="0"
+   source MATCH
+     calc="tgap"
+     endsource
+    source DELETE
+     calc="text"
+     endsource
+   query_label  SEQUENCE
+   target_label INSERT
+endstate
+state START !special !start 
+endstate
+state LOOP !special offj="1"
+  source MATCH offj="0"
+     calc="lgap"
+     target_label LOOP
+     endsource
+  source LOOP
+     calc="lext"
+     endsource
+  query_label INSERT
+  target_label SEQUENCE
+endstate
+state END !special !end
+   source MATCH 
+     calc="0"
+     endsource
+  query_label END
+  target_label END
+endstate
+endmatrix
+
+
+
+%{
+#include "foldbackmat.h"
+
+
+
+
+%}

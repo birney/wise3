@@ -1,0 +1,188 @@
+
+%{
+#include "dyna.h"
+
+
+typedef enum BoxGlyphType_enum {
+	BoxGlyphType_filled_rect = 56,
+	BoxGlyphType_circle,
+	BoxGlyphType_text
+	} BoxGlyphType;
+
+#define FrameSetLISTLENGTH 128
+%}
+
+struct Colour
+double red
+double green
+double blue
+
+struct BoundingBox
+double min_x
+double min_y
+double max_x
+double max_y
+
+struct BoxGlyph
+BoxGlyphType type
+BoundingBox * box
+char * string
+Colour * fill_colour
+Colour * stroke_colour
+double point_size !def = 10.0;
+
+
+struct FrameSet
+BoundingBox * frame
+BoxGlyph ** boxglyph !list
+
+
+%{
+#include "plot.h"
+
+
+Colour * std_Colour(char * colour_string)
+{
+  Colour * out;
+
+  out = Colour_alloc();
+  
+  if( strcmp(colour_string,"red") == 0 ) {
+    out->red = 1.0;
+    out->green = 0.0;
+    out->blue = 0.0;
+  } else if ( strcmp(colour_string,"green") == 0 ) {
+    out->red = 0.0;
+    out->green = 1.0;
+    out->blue = 0.0;
+  } else if ( strcmp(colour_string,"blue") == 0 ) {
+    out->red = 0.0;
+    out->green = 0.0;
+    out->blue = 1.0;
+  } else {
+    out->red = 1.0;
+    out->green = 1.0;
+    out->blue = 1.0;
+  }
+
+
+  return(out);
+}
+
+BoxGlyph * filled_rect_BoxGlyph(double min_x,double min_y,double max_x,double max_y,Colour * fill,Colour * stroke)
+{
+  BoxGlyph * out;
+
+  out = BoxGlyph_alloc();
+
+  out->fill_colour = fill;
+  out->stroke_colour = stroke;
+
+  out->box  = new_BoundingBox(min_x,min_y,max_x,max_y);
+  out->type = BoxGlyphType_filled_rect;
+  return(out);
+}
+
+BoxGlyph * text_BoxGlyph(double x,double y,char * string,double point_size)
+{
+  BoxGlyph * out;
+
+  out = BoxGlyph_alloc();
+
+  out->string = stringalloc(string);
+  out->point_size = point_size;
+  out->box = new_BoundingBox(x,y,x,y);
+  out->type = BoxGlyphType_text;
+  return(out);
+}
+
+
+
+BoundingBox * new_BoundingBox(double min_x,double min_y,double max_x,double max_y)
+{
+  BoundingBox * out;
+
+  out = BoundingBox_alloc();
+  out->min_x = min_x;
+  out->min_y = min_y;
+  out->max_x = max_x;
+  out->max_y = max_y;
+
+  return(out);
+}
+
+void postscript_BoxGlyph(BoxGlyph * b,FILE * ofp)
+{
+  assert(b != NULL);
+  assert(ofp != NULL);
+
+  switch(b->type) {
+  case BoxGlyphType_filled_rect :
+    postscript_BoxGlyph_filled_rectangle(b,ofp);
+    return;
+  case BoxGlyphType_text :
+    postscript_BoxGlyph_text(b,ofp);
+    return;
+  default :
+    assert("No Box glyph of this type!" == 0);
+    
+  }
+
+  assert("Dropped through switch" == 0);
+  return;
+}
+
+void postscript_BoxGlyph_filled_rectangle(BoxGlyph * b,FILE * ofp)
+{
+  assert(b != NULL);
+  assert(ofp != NULL);
+
+  fprintf(ofp,"gsave\n");
+  fprintf(ofp,"%f %f %f setrgbcolor\n",b->fill_colour->red,
+	  b->fill_colour->green,
+	  b->fill_colour->blue);
+  fprintf(ofp,"%f %f moveto\n",b->box->min_x,b->box->min_y);
+  fprintf(ofp,"%f %f lineto\n",b->box->min_x,b->box->max_y);
+  fprintf(ofp,"%f %f lineto\n",b->box->max_x,b->box->max_y);
+  fprintf(ofp,"%f %f lineto\n",b->box->max_x,b->box->min_y);
+  fprintf(ofp,"closepath fill\n");
+  
+  fprintf(ofp,"grestore\n");
+
+}
+
+void postscript_BoxGlyph_text(BoxGlyph * b,FILE * ofp)
+{
+
+  assert(b != NULL);
+  assert(ofp != NULL);
+
+
+  fprintf(ofp,"/Helvetica findfont %f scalefont setfont\n",b->point_size);
+
+  fprintf(ofp,"%f %f moveto (%s) show\n",b->box->min_x,b->box->min_y,b->string);
+
+
+}
+
+
+void flat_no_frame_postscript_FrameSet(FrameSet * fs,FILE * ofp)
+{
+  int i;
+
+  assert(fs != NULL);
+  assert(ofp != NULL);
+
+  fprintf(ofp,"%%!PS-Adobe-2.0\n");
+  fprintf(ofp,"% Created from flat plot\n");
+  
+
+  for(i=0;i<fs->len;i++) {
+    postscript_BoxGlyph(fs->boxglyph[i],ofp);
+  }
+   
+}
+
+
+
+%}
