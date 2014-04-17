@@ -139,6 +139,7 @@ void show_alignment_with_fit_SimpleSignalMat(AlnBlock * alb,SignalEventList * se
     fprintf(ofp,"%d\t%f\t",alc->alu[0]->score[0],Score2Bits(alc->alu[0]->score[0]));
     
 
+
     if( alc->alu[1]->start > 5 ) {
       strncpy(kbuf,comp->seq+alc->alu[1]->start-4,5);
     } else {
