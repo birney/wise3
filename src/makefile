@@ -87,11 +87,8 @@ realall  :
 	(cd base   ; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" libwisebase.a )
 	(cd HMMer2 ; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" libhmmer.a )
 	(cd dynlibsrc ; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" libdyna.a )
-	(cd dynlibsrc ; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" libdyna_glib.a )
 	(cd external ;  $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" all )
 	(cd socket ; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" libwisesocket.a )
-	(cd dnaindex ; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" all )
-	(cd network ; $(MAKE)  CC="$(CC)" CFLAGS="$(CFLAGS)" all )
 	(cd models  ; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" EXTRALIBS="$(EXTRALIBS)" HMMER_DEFINE="$(HMMER_DEFINE)" HMMER_INCLUDE="$(HMMER_INCLUDE)" HMMER_LIBS="$(HMMER_LIBS)" all )
 
 strict :

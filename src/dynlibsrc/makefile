@@ -98,7 +98,7 @@ RANLIB_NEEDED = 0
 # Base library build - call wisebase
 #
 
-all : libdyna.a libdyna_glib.a
+all : libdyna.a 
 
 
 libdyndb.a : $(DATABASEOBJ)

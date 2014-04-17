@@ -241,103 +241,103 @@ promoterwise.o : promoterwise.c
 	$(CC) $(CFLAGS) $(INCFLAGS) `glib-config --cflags` $?
 
 promoterwise : promoterwise.o localdba.o localcishit.o localcispara.o dbadisplay.o motifmatrix.o motifmatrixdp.o transfactor.o pwmdna.o pairwiseshortdna.o
-	$(CC) -g -o promoterwise promoterwise.o localdba.o  localcishit.o localcispara.o dbadisplay.o  motifmatrix.o motifmatrixdp.o transfactor.o pwmdna.o  pairwiseshortdna.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS) `glib-config --libs` -lpthread
+	$(CC) -g -o promoterwise promoterwise.o localdba.o  localcishit.o localcispara.o dbadisplay.o  motifmatrix.o motifmatrixdp.o transfactor.o pwmdna.o  pairwiseshortdna.o $(LFLAGS)  -ldyna -lwisebase  $(EXTRALIBS) `glib-config --libs` -lpthread
 
 test_deng : test_deng.o localdba.o localcishit.o localcispara.o dbadisplay.o motifmatrix.o motifmatrixdp.o transfactor.o pwmdna.o pairwiseshortdna.o dnaprofile.o dnaprofiledp.o dnaprofileengine.o
-	$(CC) -o test_deng test_deng.o  localdba.o localcishit.o localcispara.o dbadisplay.o motifmatrix.o motifmatrixdp.o transfactor.o pwmdna.o pairwiseshortdna.o dnaprofile.o dnaprofiledp.o dnaprofileengine.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS) `glib-config --libs` -lpthread
+	$(CC) -o test_deng test_deng.o  localdba.o localcishit.o localcispara.o dbadisplay.o motifmatrix.o motifmatrixdp.o transfactor.o pwmdna.o pairwiseshortdna.o dnaprofile.o dnaprofiledp.o dnaprofileengine.o $(LFLAGS)  -ldyna -lwisebase  $(EXTRALIBS) `glib-config --libs` -lpthread
 
 promotercluster : promotercluster.o localdba.o localcishit.o localcispara.o dbadisplay.o motifmatrix.o motifmatrixdp.o transfactor.o pwmdna.o pairwiseshortdna.o dnaprofile.o dnaprofiledp.o dnaprofileengine.o
-	$(CC) -o promotercluster promotercluster.o  localdba.o localcishit.o localcispara.o dbadisplay.o motifmatrix.o motifmatrixdp.o transfactor.o pwmdna.o pairwiseshortdna.o dnaprofile.o dnaprofiledp.o dnaprofileengine.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS) `glib-config --libs` -lpthread
+	$(CC) -o promotercluster promotercluster.o  localdba.o localcishit.o localcispara.o dbadisplay.o motifmatrix.o motifmatrixdp.o transfactor.o pwmdna.o pairwiseshortdna.o dnaprofile.o dnaprofiledp.o dnaprofileengine.o $(LFLAGS)  -ldyna -lwisebase  $(EXTRALIBS) `glib-config --libs` -lpthread
 
 dnawise : dnawise.o dnahmm.o dnahmmdp.o seqaligndisplay.o 
-	$(CC) -o dnawise dnawise.o dnahmm.o dnahmmdp.o  seqaligndisplay.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  -lpthread
+	$(CC) -o dnawise dnawise.o dnahmm.o dnahmmdp.o  seqaligndisplay.o $(LFLAGS)  -ldyna -lwisebase  -lpthread
 
 pswdb : pswdb.o seqaligndisplay.o proteinsw.o sw_wrap.o abc.o pba.o 
-	$(CC) -o pswdb pswdb.o sw_wrap.o seqaligndisplay.o proteinsw.o abc.o pba.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -o pswdb pswdb.o sw_wrap.o seqaligndisplay.o proteinsw.o abc.o pba.o $(LFLAGS)  -ldyna -lwisebase  $(EXTRALIBS)
 
 efpswdb : pswdb.o seqaligndisplay.o proteinsw.o sw_wrap.o abc.o pba.o 
-	$(CC) -o pswdb pswdb.o sw_wrap.o seqaligndisplay.o proteinsw.o abc.o pba.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  -lefence $(EXTRALIBS)
+	$(CC) -o pswdb pswdb.o sw_wrap.o seqaligndisplay.o proteinsw.o abc.o pba.o $(LFLAGS)  -ldyna -lwisebase  -lefence $(EXTRALIBS)
 
 dba : dbac.o dba.o slimdba.o bigdba.o dbadisplay.o
-	$(CC) -o dba dbac.o dba.o slimdba.o bigdba.o dbadisplay.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -o dba dbac.o dba.o slimdba.o bigdba.o dbadisplay.o $(LFLAGS)  -ldyna -lwisebase  $(EXTRALIBS)
 
 lba : lba.o largeblockdp.o seqaligndisplay.o 
-	$(CC) -o lba lba.o largeblockdp.o seqaligndisplay.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -o lba lba.o largeblockdp.o seqaligndisplay.o $(LFLAGS)  -ldyna -lwisebase  $(EXTRALIBS)
 
 
 fastdba : fastdba.o dba.o slimdba.o bigdba.o dbadisplay.o
-	$(CC) -o fastdba fastdba.o dba.o slimdba.o bigdba.o dbadisplay.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -o fastdba fastdba.o dba.o slimdba.o bigdba.o dbadisplay.o $(LFLAGS)  -ldyna -lwisebase  $(EXTRALIBS)
 
 evopairwise : evopairwise.o threestatemodel.o threestateloop.o threestatedb.o pfamhmmer1db.o wise2xhmmer2.o seqaligndisplay.o 
-	$(CC) -o evopairwise evopairwise.o threestatemodel.o threestateloop.o threestatedb.o pfamhmmer1db.o  wise2xhmmer2.o seqaligndisplay.o $(LFLAGS) -lhmmer -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -o evopairwise evopairwise.o threestatemodel.o threestateloop.o threestatedb.o pfamhmmer1db.o  wise2xhmmer2.o seqaligndisplay.o $(LFLAGS) -lhmmer  -ldyna -lwisebase  $(EXTRALIBS)
 
 test_threestatehsp : test_threestatehsp.o threestatemodel.o threestateloop.o threestatedb.o pfamhmmer1db.o wise2xhmmer2.o seqaligndisplay.o threestatehsp.o 
-	$(CC) -o test_threestatehsp test_threestatehsp.o threestatemodel.o threestateloop.o threestatedb.o pfamhmmer1db.o  seqaligndisplay.o threestatehsp.o  wise2xhmmer2.o $(LFLAGS) -lhmmer -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -o test_threestatehsp test_threestatehsp.o threestatemodel.o threestateloop.o threestatedb.o pfamhmmer1db.o  seqaligndisplay.o threestatehsp.o  wise2xhmmer2.o $(LFLAGS) -lhmmer  -ldyna -lwisebase  $(EXTRALIBS)
 
 makerandomdb : makerandomdb.o 
-	$(CC) -o makerandomdb makerandomdb.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -o makerandomdb makerandomdb.o $(LFLAGS)  -ldyna -lwisebase  $(EXTRALIBS)
 
 genewise : genewise.o $(NEWG) 
-	$(CC) -o genewise genewise.o $(NEWG) $(LFLAGS) -lhmmer -ldyna_glib -ldyna_glib -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -o genewise genewise.o $(NEWG) $(LFLAGS) -lhmmer  -ldyna_glib -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
 
 cdnawise : cdnawise.o $(NEWG) cdnawise10.o 
-	$(CC) -g -o cdnawise cdnawise.o cdnawise10.o $(NEWG) $(LFLAGS) -lhmmer -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -g -o cdnawise cdnawise.o cdnawise10.o $(NEWG) $(LFLAGS) -lhmmer  -ldyna -lwisebase  $(EXTRALIBS)
 
 fivestar : fivestar.o fivestatemodel.o fivestate.o threestatemodel.o threestatedb.o pfamhmmer1db.o wise2xhmmer2.o seqaligndisplay.o standardout.o threestatedp.o
-	$(CC) -g -o fivestar fivestar.o fivestatemodel.o fivestate.o threestatedb.o threestatemodel.o pfamhmmer1db.o wise2xhmmer2.o seqaligndisplay.o standardout.o  threestatedp.o $(LFLAGS) -lhmmer -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -g -o fivestar fivestar.o fivestatemodel.o fivestate.o threestatedb.o threestatemodel.o pfamhmmer1db.o wise2xhmmer2.o seqaligndisplay.o standardout.o  threestatedp.o $(LFLAGS) -lhmmer  -ldyna -lwisebase  $(EXTRALIBS)
 
 
 fivestarsearch : fivestarsearch.o fivestatemodel.o fivestate.o threestatemodel.o threestatedb.o pfamhmmer1db.o wise2xhmmer2.o seqaligndisplay.o standardout.o threestatedp.o
-	$(CC) -g -o fivestarsearch fivestarsearch.o fivestatemodel.o fivestate.o threestatedb.o threestatemodel.o pfamhmmer1db.o wise2xhmmer2.o seqaligndisplay.o standardout.o  threestatedp.o $(LFLAGS) -lhmmer -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -g -o fivestarsearch fivestarsearch.o fivestatemodel.o fivestate.o threestatedb.o threestatemodel.o pfamhmmer1db.o wise2xhmmer2.o seqaligndisplay.o standardout.o  threestatedp.o $(LFLAGS) -lhmmer  -ldyna -lwisebase  $(EXTRALIBS)
 
 fivestarscan : fivestarscan.o fivestatemodel.o fivestate.o threestatemodel.o threestatedb.o pfamhmmer1db.o wise2xhmmer2.o seqaligndisplay.o standardout.o threestatedp.o
-	$(CC) -g -o fivestarscan fivestarscan.o fivestatemodel.o fivestate.o threestatedb.o threestatemodel.o pfamhmmer1db.o wise2xhmmer2.o seqaligndisplay.o standardout.o  threestatedp.o $(LFLAGS) -lhmmer -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -g -o fivestarscan fivestarscan.o fivestatemodel.o fivestate.o threestatedb.o threestatemodel.o pfamhmmer1db.o wise2xhmmer2.o seqaligndisplay.o standardout.o  threestatedp.o $(LFLAGS) -lhmmer  -ldyna -lwisebase  $(EXTRALIBS)
 
 
 editdist : editdist.o editdistdp.o standardout.o seqaligndisplay.o 
-	$(CC) -g -o editdist editdist.o editdistdp.o standardout.o seqaligndisplay.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase 
+	$(CC) -g -o editdist editdist.o editdistdp.o standardout.o seqaligndisplay.o $(LFLAGS)  -ldyna -lwisebase 
 
 
 efgw   : genewise.o $(NEWG) 
-	$(CC) -g -o genewise genewise.o  $(NEWG)  $(LFLAGS) -lhmmer -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS) -lefence
+	$(CC) -g -o genewise genewise.o  $(NEWG)  $(LFLAGS) -lhmmer  -ldyna -lwisebase  $(EXTRALIBS) -lefence
 
 
 genewisedb : genewisedb.o $(NEWG) 
-	$(CC) -g -o genewisedb genewisedb.o  $(NEWG)  $(LFLAGS) -lhmmer -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS) 
+	$(CC) -g -o genewisedb genewisedb.o  $(NEWG)  $(LFLAGS) -lhmmer  -ldyna -lwisebase  $(EXTRALIBS) 
 
 estwisedb : estwisedb.o $(NEWG) 
-	$(CC) -g -o estwisedb estwisedb.o $(NEWG)  $(LFLAGS) -lhmmer -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -g -o estwisedb estwisedb.o $(NEWG)  $(LFLAGS) -lhmmer  -ldyna -lwisebase  $(EXTRALIBS)
 
 edb : estwisedb.o $(NEWG) 
-	$(CC) -g -o estwisedb estwisedb.o $(NEWG)  $(LFLAGS) -lhmmer -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS) -lefence
+	$(CC) -g -o estwisedb estwisedb.o $(NEWG)  $(LFLAGS) -lhmmer  -ldyna -lwisebase  $(EXTRALIBS) -lefence
 
 estwise : estwise.o $(NEWG) 
-	$(CC) -g -o estwise estwise.o  $(NEWG) $(LFLAGS) -lhmmer -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -g -o estwise estwise.o  $(NEWG) $(LFLAGS) -lhmmer  -ldyna -lwisebase  $(EXTRALIBS)
 
 
 amplimer_resolver : amplimer_resolver.o dnaalign.o dnamatcher.o 
-	$(CC) -g -o amplimer_resolver amplimer_resolver.o dnamatcher.o dnaalign.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -g -o amplimer_resolver amplimer_resolver.o dnamatcher.o dnaalign.o $(LFLAGS)  -ldyna -lwisebase  $(EXTRALIBS)
 
 genomewise : genomewise.o genomewise9.o genome_evidence.o est_evidence.o geneutil.o geneoutput.o
-	$(CC) -g -o genomewise genomewise.o genomewise9.o genome_evidence.o est_evidence.o geneoutput.o geneutil.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -g -o genomewise genomewise.o genomewise9.o genome_evidence.o est_evidence.o geneoutput.o geneutil.o $(LFLAGS)  -ldyna -lwisebase  $(EXTRALIBS)
 
 sywise : sywise.o sywise20.o syexonmodel.o genestats.o pwmdna.o geneutil.o standardout.o
-	$(CC) -g -o sywise sywise.o sywise20.o syexonmodel.o genestats.o pwmdna.o  standardout.o geneutil.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -g -o sywise sywise.o sywise20.o syexonmodel.o genestats.o pwmdna.o  standardout.o geneutil.o $(LFLAGS)  -ldyna -lwisebase  $(EXTRALIBS)
 
 alignwise : alignwise.o alignwisedp.o aligngenemodel.o genestats.o pwmdna.o geneutil.o standardout.o geneoutput.o
-	$(CC) -g -o alignwise alignwise.o alignwisedp.o aligngenemodel.o genestats.o pwmdna.o geneutil.o standardout.o geneoutput.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -g -o alignwise alignwise.o alignwisedp.o aligngenemodel.o genestats.o pwmdna.o geneutil.o standardout.o geneoutput.o $(LFLAGS)  -ldyna -lwisebase  $(EXTRALIBS)
 
 test_splice : test_splice.o  aligngenemodel.o genestats.o pwmdna.o geneutil.o standardout.o
-	$(CC) -g -o test_splice test_splice.o aligngenemodel.o genestats.o pwmdna.o geneutil.o standardout.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -g -o test_splice test_splice.o aligngenemodel.o genestats.o pwmdna.o geneutil.o standardout.o $(LFLAGS)  -ldyna -lwisebase  $(EXTRALIBS)
 
 statwise : statwise.o statwise10.o syexonmodel.o genestats.o pwmdna.o geneutil.o
-	$(CC) -g -o statwise statwise.o statwise10.o syexonmodel.o genestats.o pwmdna.o geneutil.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -g -o statwise statwise.o statwise10.o syexonmodel.o genestats.o pwmdna.o geneutil.o $(LFLAGS)  -ldyna -lwisebase  $(EXTRALIBS)
 
 pseudowise : pseudowise.o pseudowise7.o $(NEWG) 
-	$(CC) -g -o pseudowise pseudowise.o pseudowise7.o $(NEWG) $(LFLAGS) -lhmmer -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -g -o pseudowise pseudowise.o pseudowise7.o $(NEWG) $(LFLAGS) -lhmmer  -ldyna -lwisebase  $(EXTRALIBS)
 
 clonewise : clonewise.o clonewisedp.o localclonewisedp.o mapstruct.o
-	$(CC) -g -o clonewise clonewise.o clonewisedp.o localclonewisedp.o mapstruct.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -g -o clonewise clonewise.o clonewisedp.o localclonewisedp.o mapstruct.o $(LFLAGS)  -ldyna -lwisebase  $(EXTRALIBS)
 
 porewise : porewise.o dualsignal.o signalalign.o 
 	$(CC) -g -o porewise porewise.o dualsignal.o signalalign.o ../dnaindex/dnamapping.o $(LFLAGS) -ldyna -lwisebase  $(EXTRALIBS)

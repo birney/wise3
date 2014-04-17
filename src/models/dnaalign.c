@@ -224,7 +224,7 @@ DnaStartEnd * free_DnaStartEnd(DnaStartEnd * obj)
 
   /*****************   C functions  ****************/
   /*             Written using dynamite            */
-  /*            Thu Jun  7 09:36:51 2012           */
+  /*            Thu Apr 17 00:43:08 2014           */
   /*            email birney@sanger.ac.uk          */
   /* http://www.sanger.ac.uk/Users/birney/dynamite */
   /*************************************************/
@@ -587,7 +587,7 @@ Search_Return_Type search_DnaAlign(DBSearchImpl * dbsi,Hscore * out,ComplexSeque
       return SEARCH_ERROR;   
       }  
     if( dbsi->trace_level > 5 )  
-      warn("Asking for trace level of %d in database search for DnaAlign, but it was compiled with a trace level of 32. Not all trace statements can be shown",dbsi->trace_level);   
+      warn("Asking for trace level of %d in database search for DnaAlign, but it was compiled with a trace level of 36. Not all trace statements can be shown",dbsi->trace_level);   
     switch(dbsi->type)   { /*switch on implementation*/ 
       case DBSearchImpl_Serial : 
         return serial_search_DnaAlign(out,query,target ,comp,qgap,qext,tgap,text,startend);  
