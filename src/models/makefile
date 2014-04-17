@@ -339,7 +339,7 @@ clonewise : clonewise.o clonewisedp.o localclonewisedp.o mapstruct.o
 	$(CC) -g -o clonewise clonewise.o clonewisedp.o localclonewisedp.o mapstruct.o $(LFLAGS)  -ldyna -lwisebase  $(EXTRALIBS)
 
 porewise : porewise.o dualsignal.o signalalign.o 
-	$(CC) -g -o porewise porewise.o dualsignal.o signalalign.o ../dnaindex/dnamapping.o $(LFLAGS) -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -g -o porewise porewise.o dualsignal.o signalalign.o  $(LFLAGS) -ldyna -lwisebase  $(EXTRALIBS) -lm
 
 
 
