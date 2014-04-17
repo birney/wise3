@@ -24,7 +24,10 @@
 #include "estwise3.h"
 #include "estloop3.h"
 
-#include "genewisehsp.h"
+/**
+
+#include "genewisehsp.h" 
+**/
 
 
 enum GWWRAP_ALG_TYPE {
@@ -158,7 +161,7 @@ is_global has now become flag for local/global/end-biased switch
 pg  r Potential gene - could be NULL - if rough exon positions are known 
 pal wN Raw alginment to be saved if non-NULL
 %%  
-AlnBlock * AlnBlock_from_protein_genewise_wrap(Protein * protein,Genomic * dna,CompMat * comp,int gap,int ext,GeneParameter21 * gpara,RandomModelDNA * rmd,RandomModelDNA * intergenic,int alg,boolean use_syn,RandomModel * rm,Probability allN,TSM_StartEndMode startendmode,DPRunImpl * dpri,PackAln ** pal,GeneWiseRunPara * gwp)
+AlnBlock * AlnBlock_from_protein_genewise_wrap(Protein * protein,Genomic * dna,CompMat * comp,int gap,int ext,GeneParameter21 * gpara,RandomModelDNA * rmd,RandomModelDNA * intergenic,int alg,boolean use_syn,RandomModel * rm,Probability allN,TSM_StartEndMode startendmode,DPRunImpl * dpri,PackAln ** pal)
 {
   ThreeStateModel * tsm;
   RandomModel * rm2;
@@ -174,9 +177,6 @@ AlnBlock * AlnBlock_from_protein_genewise_wrap(Protein * protein,Genomic * dna,C
 
   rm2 = default_RandomModel();
   
-  if( gwp->use_hsp == TRUE ) {
-    dpenv = DPEnvelope_from_protein_gen(protein->baseseq,dna->baseseq,comp,gpara->ct,gwp);
-  }
 
   if( startendmode == TSM_default ) {
     startendmode = TSM_endbiased;

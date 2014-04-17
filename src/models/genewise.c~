@@ -167,6 +167,7 @@ RandomModel * rm;
 
 DPRunImpl * dpri;
 
+GeneWiseRunPara * gwrp;
 
 void show_parameters(void)
 {
@@ -376,7 +377,7 @@ boolean build_alignment(void)
     alb = AlnBlock_from_phased_protein_wrap(pro,tsm,gen,gpara->cm,rm,mat,ppp,gpara,dpri,&pal);
   } else {
     if( use_tsm == FALSE) {
-      alb =  AlnBlock_from_protein_genewise_wrap(pro,gen,mat,-gap,-ext,gpara,rmd,rmd,alg,use_syn,rm,allN,startend,dpri,&pal);
+      alb =  AlnBlock_from_protein_genewise_wrap(pro,gen,mat,-gap,-ext,gpara,rmd,rmd,alg,use_syn,rm,allN,startend,dpri,&pal,gwrp);
     } else {
       alb =  AlnBlock_from_TSM_genewise_wrap(tsm,gen,gpara,rmd,rmd,use_syn,alg,allN,flat_insert,dpri,&pal,NULL);
     }
@@ -843,6 +844,8 @@ void show_help(FILE * ofp)
   fprintf(ofp,"  -block  [%s]     Length of main block in pretty output\n",main_block_str);
   fprintf(ofp,"  -divide [%s]     divide string for multiple outputs\n",divide_str);
 
+  show_help_GeneWiseRunPara(ofp);
+
   
   show_help_DPRunImpl(ofp);
   show_standard_options(ofp);
@@ -1051,6 +1054,8 @@ int main(int argc,char ** argv)
   gmp  = new_GeneModelParam_from_argv(&argc,argv);
 
   ppp = new_PhasedProteinPara_from_argv(&argc,argv);
+
+  gwrp = new_GeneWiseRunPara_from_argv(&argc,argv);
 
   strip_out_remaining_options_with_warning(&argc,argv);
 

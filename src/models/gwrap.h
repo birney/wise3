@@ -26,7 +26,10 @@ extern "C" {
 #include "estwise3.h"
 #include "estloop3.h"
 
-#include "genewisehsp.h"
+/**
+
+#include "genewisehsp.h" 
+**/
 
 
 enum GWWRAP_ALG_TYPE {
@@ -85,7 +88,7 @@ GeneParameter21 * Wise2_GeneParameter21_wrap(GeneFrequency21 * gf,double subs_er
 #define GeneParameter21_wrap Wise2_GeneParameter21_wrap
 
 
-/* Function:  AlnBlock_from_protein_genewise_wrap(protein,pg,is_global,dna,comp,gap,ext,gpara,rmd,intergenic,alg,use_syn,rm,allN,startendmode,dpri,pal,gwp)
+/* Function:  AlnBlock_from_protein_genewise_wrap(protein,pg,is_global,dna,comp,gap,ext,gpara,rmd,intergenic,alg,use_syn,rm,allN,startendmode,dpri,pal)
  *
  * Descrip:    A function which aligns a Protein sequecne to a Genomic sequence
  *             under the Comparison matrix comp and the gene paras in gpara.
@@ -144,12 +147,11 @@ GeneParameter21 * Wise2_GeneParameter21_wrap(GeneFrequency21 * gf,double subs_er
  * Arg:        startendmode [UNKN ] Undocumented argument [TSM_StartEndMode]
  * Arg:                dpri [UNKN ] Undocumented argument [DPRunImpl *]
  * Arg:                 pal [WRITE] Raw alginment to be saved if non-NULL [PackAln **]
- * Arg:                 gwp [UNKN ] Undocumented argument [GeneWiseRunPara *]
  *
  * Return [UNKN ]  Undocumented return value [AlnBlock *]
  *
  */
-AlnBlock * Wise2_AlnBlock_from_protein_genewise_wrap(Protein * protein,Genomic * dna,CompMat * comp,int gap,int ext,GeneParameter21 * gpara,RandomModelDNA * rmd,RandomModelDNA * intergenic,int alg,boolean use_syn,RandomModel * rm,Probability allN,TSM_StartEndMode startendmode,DPRunImpl * dpri,PackAln ** pal,GeneWiseRunPara * gwp);
+AlnBlock * Wise2_AlnBlock_from_protein_genewise_wrap(Protein * protein,Genomic * dna,CompMat * comp,int gap,int ext,GeneParameter21 * gpara,RandomModelDNA * rmd,RandomModelDNA * intergenic,int alg,boolean use_syn,RandomModel * rm,Probability allN,TSM_StartEndMode startendmode,DPRunImpl * dpri,PackAln ** pal);
 #define AlnBlock_from_protein_genewise_wrap Wise2_AlnBlock_from_protein_genewise_wrap
 
 

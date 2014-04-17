@@ -10,6 +10,8 @@ void show_alignment_with_fit_SimpleSignalMat(AlnBlock * alb,SignalEventList * se
 {
   AlnColumn * alc;
   int i = 1;
+
+  char kbuf[10];
   
   double obs;
   double pred;
@@ -24,7 +26,7 @@ void show_alignment_with_fit_SimpleSignalMat(AlnBlock * alb,SignalEventList * se
 
 
 
-  fprintf(ofp,"AlnNum\tSigLabel\tSeqLabel\tRawScore\tBitsScore\tSigStart\tSigEnd\tSigMean\tSigStdev\tSigBase\tSigKmer\tSigTimeStart\tSigTimeLen\tSignalFit\tSeqStart\tSeqEnd\tSeqBase\tModelMean\n");
+  fprintf(ofp,"AlnNum\tSigLabel\tSeqLabel\tRawScore\tBitsScore\tSigStart\tSigEnd\tSigMean\tSigStdev\tSigBase\tSigKmer\tSigTimeStart\tSigTimeLen\tSignalFit\tSeqStart\tSeqEnd\tSeqBase\tSeqKmer\tModelMean\n");
   for(alc=alb->start;alc != NULL;alc = alc->next) {
 
 
@@ -46,6 +48,14 @@ void show_alignment_with_fit_SimpleSignalMat(AlnBlock * alb,SignalEventList * se
     fprintf(ofp,"%d\t%f\t",alc->alu[0]->score[0],Score2Bits(alc->alu[0]->score[0]));
     
 
+    if( alc->alu[1]->start > 5 ) {
+      strncpy(kbuf,comp->seq+alc->alu[1]->start-4,5);
+    } else {
+      strncpy(kbuf,"???????????",5);
+    }
+
+
+
     fprintf(ofp,"%d\t%d\t%f\t%f\t%c\t%s\t%f\t%f\t",
 	    alc->alu[0]->start,
 	    alc->alu[0]->end,
@@ -58,10 +68,11 @@ void show_alignment_with_fit_SimpleSignalMat(AlnBlock * alb,SignalEventList * se
 
     fprintf(ofp,"%f\t",(obs-pred)/sm->comp[kmer]->sd);
 
-    fprintf(ofp,"%d\t%d\t%c\t%f",
+    fprintf(ofp,"%d\t%d\t%c\t%.5s\t%f",
 	    alc->alu[1]->start,
 	    alc->alu[1]->end,
 	    comp->seq[alc->alu[1]->start],
+	    kbuf,
 	    pred);
       
     fprintf(ofp,"\n");
@@ -72,12 +83,12 @@ void show_alignment_with_fit_SimpleSignalMat(AlnBlock * alb,SignalEventList * se
 
 }
 
-# line 74 "signalalign.c"
+# line 85 "signalalign.c"
 
 
   /*****************   C functions  ****************/
   /*             Written using dynamite            */
-  /*            Wed Apr  2 21:38:44 2014           */
+  /*            Thu Apr 17 02:50:28 2014           */
   /*            email birney@sanger.ac.uk          */
   /* http://www.sanger.ac.uk/Users/birney/dynamite */
   /*************************************************/
