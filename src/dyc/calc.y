@@ -7,6 +7,10 @@ extern ExprTree * root;
 extern char * calc_lex_string;
 extern int stringpos;
 
+
+void yyerror(const char *);
+
+
 %}
 
 %union {
@@ -79,9 +83,9 @@ void yywrap(void)
 }
 #endif
 
-void yyerror(char * s) 
+
+void yyerror(char const * s) 
 {
-  /*** stringpos is position along the string ***/
 
   int i;
 
@@ -94,9 +98,8 @@ void yyerror(char * s)
   fputc('^',stderr);
   fputc('\n',stderr);
 
-  root = NULL; /*** fuck - memory !!!! ***/
+  root = NULL;
 
 }
-
 
 

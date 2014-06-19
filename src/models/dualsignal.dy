@@ -11,7 +11,12 @@
 
 #define MAX_EVENT_KMER 24
 
-#define SignalEventListLISTLENGTH 1028
+#define DUALSIGNAL_INIT_SIZE 1024
+
+#define SignalEventListLISTLENGTH 1024
+
+
+#define CSEQ_DUAL_SIGNAL_KMER(cseq,j) (ComplexSequence_data(cseq,j,3))
 
 %}
 
@@ -29,6 +34,14 @@ struct SignalEventList
 char * name
 SignalEvent ** event !list
 
+
+struct RawSignalSeq
+double * signal
+double * time_len
+double * signal_var
+int len
+double start_time
+char * name
 
 struct SignalSeq
 double * signal
@@ -60,8 +73,150 @@ Probability insert
 Probability stay_insert
 Probability skip
 
+
+
 %{
 #include "dualsignal.h"
+
+
+
+ComplexSequenceEvalSet * kmer_ComplexSequenceEvalSet(int kmer_size)
+{
+  ComplexSequenceEvalSet * out;
+
+  out = ComplexSequenceEvalSet_alloc_len(10);
+
+  /* put in bases and codons by default - we may well need them */
+
+  add_ComplexSequenceEvalSet(out,base_number_ComplexSequenceEval());
+  add_ComplexSequenceEvalSet(out,codon_number_ComplexSequenceEval());
+
+  /* this is the more complex kmer */
+
+  add_ComplexSequenceEvalSet(out,kmer_number_ComplexSequenceEval(kmer_size));
+
+  
+  prepare_ComplexSequenceEvalSet(out);
+
+  return (out);
+
+}
+
+
+ComplexSequenceEval * kmer_number_ComplexSequenceEval(int kmer_size)
+{
+  ComplexSequenceEval * out;
+  int * d;
+
+  assert(kmer_size > 0 && kmer_size < 21);
+
+  out = ComplexSequenceEval_alloc();
+
+  out->left_window = kmer_size;
+  out->right_window = 0;
+  out->left_lookback = kmer_size +1;
+  out->outside_score = 0;
+  out->eval_func       = kmer_complexseq_eval;
+
+  /* memory leak here like all ComplexSeq Evals. Sigh */
+  d = malloc(sizeof(int));
+  *d = kmer_size;
+  (out->data) = (void *) d;
+
+  return(out);
+
+}
+
+int kmer_complexseq_eval(int type,void * data,char * seq)
+{
+  int kmer_size;
+
+  assert(seq != NULL);
+  assert(data != NULL);
+
+  kmer_size = * (int *) data;
+
+  return( forward_dna_number_from_string(seq - kmer_size,kmer_size));
+
+}
+
+void show_alignment_with_fit_SimpleSignalMat(AlnBlock * alb,SignalEventList * sel,Sequence * comp,SignalMap * sm,FILE * ofp)
+{
+  AlnColumn * alc;
+  int i = 1;
+
+  char kbuf[10];
+  
+  double obs;
+  double pred;
+
+  kmer_t kmer;
+
+
+  assert(alb != NULL);
+  assert(sel != NULL);
+  assert(comp != NULL);
+  assert(ofp != NULL);
+
+
+
+  fprintf(ofp,"AlnNum\tSigLabel\tSeqLabel\tRawScore\tBitsScore\tSigStart\tSigEnd\tSigMean\tSigStdev\tSigBase\tSigKmer\tSigTimeStart\tSigTimeLen\tSignalFit\tSeqStart\tSeqEnd\tSeqBase\tSeqKmer\tModelMean\n");
+  for(alc=alb->start;alc != NULL;alc = alc->next) {
+
+
+    if( strcmp(alc->alu[0]->text_label,"END") == 0 ) {
+      break;
+    }
+
+    fprintf(ofp,"%d\t",i);
+
+    
+    kmer = forward_dna_number_from_string(comp->seq+alc->alu[1]->end - sm->kbasis,sm->kbasis);
+
+    obs = sel->event[alc->alu[0]->end]->mean;
+    pred = sm->comp[kmer]->mean;
+
+
+    fprintf(ofp,"%s\t%s\t",alc->alu[0]->text_label,alc->alu[1]->text_label);
+
+    fprintf(ofp,"%d\t%f\t",alc->alu[0]->score[0],Score2Bits(alc->alu[0]->score[0]));
+    
+
+
+    if( alc->alu[1]->start > 5 ) {
+      strncpy(kbuf,comp->seq+alc->alu[1]->start-4,5);
+    } else {
+      strncpy(kbuf,"???????????",5);
+    }
+
+
+
+    fprintf(ofp,"%d\t%d\t%f\t%f\t%c\t%s\t%f\t%f\t",
+	    alc->alu[0]->start,
+	    alc->alu[0]->end,
+	    sel->event[alc->alu[0]->end]->mean,
+	    sel->event[alc->alu[0]->end]->std,
+	    sel->event[alc->alu[0]->end]->base,
+	    sel->event[alc->alu[0]->end]->kmer,
+	    sel->event[alc->alu[0]->end]->time_pos,
+	    sel->event[alc->alu[0]->end]->time_length);
+
+    fprintf(ofp,"%f\t",(obs-pred)/sm->comp[kmer]->sd);
+
+    fprintf(ofp,"%d\t%d\t%c\t%.5s\t%f",
+	    alc->alu[1]->start,
+	    alc->alu[1]->end,
+	    comp->seq[alc->alu[1]->start],
+	    kbuf,
+	    pred);
+      
+    fprintf(ofp,"\n");
+	    
+
+    i++;
+  }
+
+}
 
 
 
@@ -110,6 +265,39 @@ SignalMap * reverse_SignalMap(SignalMap * sm)
 
 
 
+
+Score Score_offset_RawSignalMap(SignalMap * sm,RawSignalSeq * raw,int i,Sequence * comp,int j)
+{
+  kmer_t kmer;
+  int step;
+
+  assert(sm != NULL);
+  assert(raw != NULL);
+  assert(comp != NULL);
+
+  if( j <= sm->kbasis ) {
+    return NEGI;
+  }
+
+  /*  kmer = forward_dna_number_from_string(comp->seq - sm->kbasis + j,sm->kbasis); */
+  kmer = forward_dna_number_from_string(comp->seq - sm->kbasis + j,sm->kbasis);
+  
+  step = (int)((raw->signal[i] - sm->emission_start) / sm->emission_step);
+/*
+  fprintf(stdout,"Position %d,%d  signal %f, kmer step %d (start %f) score %d\n",i,j,sseq->signal[j],step,sm->emission_start, sm->comp[kmer]->em_score[step]);
+*/
+
+
+
+  if( step < 0 || step >= sm->emission_length ) {
+    return NEGI;
+  } else {
+    /* fprintf(stderr,"for %d,%d, returning kmer %ld step %d - emission %d length %d \n",i,j,kmer,step,sm->emission_length,sm->len); */
+
+    return( sm->comp[kmer]->em_score[step]);
+  }
+
+}
 
 Score Score_offset_SignalMap(SignalMap * sm,SignalSeq * sseq,int i,Sequence * comp,int j)
 {
@@ -195,6 +383,66 @@ SignalSim * new_SignalSim(double insert,double stay_insert,double skip)
   return(out);
 }
 
+RawSignalSeq * simulated_RawSignalSeq_from_Seq(Sequence * seq,SignalMap * sm,SignalSim * sim,int length_of_event)
+{
+  Sequence * true_call;
+  kmer_t kmer;
+  int i;
+  int j;
+  int k;
+  RawSignalSeq * out;
+  
+  char * tempseq;
+  double * signal;
+  double * signal_var;
+  double * time_a;
+
+  /** ERROR - not pleasant **/
+
+  /*  fprintf(stderr,"Doing a hack here... %d",seq->len);*/
+
+
+  i = 0;
+  j = 0;
+
+
+  signal = calloc(seq->len*2 * length_of_event,sizeof(double));
+  time_a = calloc(seq->len*2 * length_of_event,sizeof(double));
+  signal_var = calloc(seq->len*2 * length_of_event,sizeof(double));
+
+  while( i < seq->len - sm->kbasis -1  ) {
+    if( flip_coin(sim->skip) == 1 ) {
+      i++;
+      tempseq[j] = tolower(seq->seq[i]);
+      j++;
+      continue;
+    }
+    
+
+    kmer = forward_dna_number_from_string(seq->seq+i,sm->kbasis);
+
+    for(k=0;k<length_of_event;k++) {
+        signal[j] = draw_from_normal(sm->comp[kmer]->mean,sm->comp[kmer]->sd);
+	time_a[j] = 0.02;
+	signal_var[j] = 0.0;
+	j++;
+    }
+
+    i++;
+  }
+
+
+  out = RawSignalSeq_alloc();
+  out->signal = signal;
+  out->time_len = time_a;
+  out->signal_var = signal_var;
+  out->name = stringalloc(seq->name);
+  out->start_time = 0.0;
+  out->len = j;
+  return(out);
+ 
+}
+
 
 SignalSeq * simulated_SignalSeq_from_Seq(Sequence * seq,SignalMap * sm,SignalSim * sim)
 {
@@ -245,6 +493,143 @@ SignalSeq * simulated_SignalSeq_from_Seq(Sequence * seq,SignalMap * sm,SignalSim
   out->true_len = j;
   return(out);
  
+}
+
+void write_RawSignalSeq(RawSignalSeq * rss,FILE *ofp)
+{
+  int i;
+  double time_i;
+
+  assert(rss != NULL);
+  assert(ofp != NULL);
+
+  fprintf(ofp,">%s\n",rss->name);
+  fprintf(ofp,"start\tlength\tmean\tstdev\n");
+
+  time_i = rss->start_time;
+
+  for(i=0;i<rss->len;i++) {
+    fprintf(ofp,"%lf\t%lf\t%lf\t%lf\n",time_i,rss->time_len[i],rss->signal[i],rss->signal_var[i]);
+    time_i += rss->time_len[i];
+  }
+
+  fprintf(ofp,"//\n");
+
+
+}
+
+
+RawSignalSeq * read_RawSignalSeq(FILE * ifp)
+{
+  char buffer[MAXLINE];
+  RawSignalSeq * out;
+  int i;
+  char * seq;
+  char name[MAXLINE];
+  double * signal;	
+  double * time_len;
+  double * signal_var;
+  char * runner;
+  int len;
+  char base;
+  double sig;
+  double time_start;
+  double time_l;
+  double sig_var;
+
+  double time_cum;
+  
+  double start_time;
+
+  
+
+  assert(ifp != NULL);
+
+  if( fgets(name,MAXLINE,ifp) == NULL ) {
+    return NULL;
+  }
+
+  if( name[0] != '>' ) {
+    warn("Bad SignalSequence, not starting with >");
+  } else {
+    runner = name+1;
+    while( isalnum(*runner) || *runner == '_' ) {
+      runner++;
+    }
+
+    (*runner) = '\0';
+  }
+  
+  seq = calloc(DUALSIGNAL_INIT_SIZE,sizeof(char));
+  signal = calloc(DUALSIGNAL_INIT_SIZE,sizeof(double));
+  signal_var = calloc(DUALSIGNAL_INIT_SIZE,sizeof(double));
+  time_len = calloc(DUALSIGNAL_INIT_SIZE,sizeof(double));
+  len = DUALSIGNAL_INIT_SIZE;
+    
+  i = 0;
+
+  assert(ifp != NULL);
+
+
+  while( fgets(buffer,MAXLINE,ifp) != NULL) {
+
+    if( buffer[0] == '/' && buffer[1] == '/' ) {
+      break;
+    }
+
+    if( strstartcmp(buffer,"start") == 0 ) {
+      continue;
+    }
+
+    /* this is what we expect start-time time-length mean-signal stddev */
+
+    sscanf(buffer,"%lf %lf %lf %lf\n",&time_start,&time_l,&sig,&sig_var);
+
+    
+
+    /*    fprintf(stderr,"reading %c %f\n",base,sig); */
+
+    signal[i] = sig;
+    time_len[i] = time_l;
+    signal_var[i] = sig_var;
+    if( i == 0 ) {
+      start_time = time_start;
+      time_cum = start_time;
+    } else {
+      if( abs(time_cum + time_l - time_start) > 0.001 ) {
+	warn("No adjacent times in Raw Signal input. Offsets are going to come out wrong!");
+      } else {
+	/* nothing */
+      }
+      
+      time_cum += time_l;
+    }
+
+    
+
+    i++;
+    if( i >= len ) {
+      signal = realloc(signal,len*2*sizeof(double));
+      time_len = realloc(time_len,len*2*sizeof(double));
+      signal_var = realloc(signal_var,len*2*sizeof(double));
+      len = len*2;
+    }
+  }
+
+
+  out = RawSignalSeq_alloc();
+ 
+  out->name = stringalloc(name+1);
+
+  out->signal = signal;
+  out->time_len = time_len;
+  out->signal_var = signal_var;
+  out->start_time = start_time;
+
+  out->len = i;
+
+  return(out);
+
 }
 
 
@@ -907,7 +1292,7 @@ void write_SignalEventList(SignalEventList * sel,FILE * ofp)
 	    sel->event[i]->time_length);
   }
 
-
+  fprintf(ofp,"//\n");
 }
 
 

@@ -6,7 +6,6 @@
 NEWG = geneparser21.o \
 	geneparameter.o \
 	genestats.o \
-	genewisehsp.o \
 	geneutil.o \
 	geneoutput.o \
 	threestatemodel.o \
@@ -278,7 +277,7 @@ makerandomdb : makerandomdb.o
 	$(CC) -o makerandomdb makerandomdb.o $(LFLAGS)  -ldyna -lwisebase  $(EXTRALIBS)
 
 genewise : genewise.o $(NEWG) 
-	$(CC) -o genewise genewise.o $(NEWG) $(LFLAGS) -lhmmer  -ldyna_glib -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+	$(CC) -o genewise genewise.o $(NEWG) $(LFLAGS) -lhmmer  -ldyna -lwisebase  $(EXTRALIBS)
 
 cdnawise : cdnawise.o $(NEWG) cdnawise10.o 
 	$(CC) -g -o cdnawise cdnawise.o cdnawise10.o $(NEWG) $(LFLAGS) -lhmmer  -ldyna -lwisebase  $(EXTRALIBS)
@@ -339,8 +338,8 @@ pseudowise : pseudowise.o pseudowise7.o $(NEWG)
 clonewise : clonewise.o clonewisedp.o localclonewisedp.o mapstruct.o
 	$(CC) -g -o clonewise clonewise.o clonewisedp.o localclonewisedp.o mapstruct.o $(LFLAGS)  -ldyna -lwisebase  $(EXTRALIBS)
 
-porewise : porewise.o dualsignal.o signalalign.o 
-	$(CC) -g -o porewise porewise.o dualsignal.o signalalign.o ../dnaindex/dnamapping.o $(LFLAGS) -ldyna -lwisebase  $(EXTRALIBS)
+porewise : porewise.o dualsignal.o signalalign.o eventalign.o 
+	$(CC) -g -o porewise porewise.o dualsignal.o signalalign.o eventalign.o $(LFLAGS) -ldyna -lwisebase  $(EXTRALIBS) -lm
 
 
 

@@ -5,7 +5,151 @@ extern "C" {
 
 
 
-# line 68 "dualsignal.dy"
+# line 83 "dualsignal.dy"
+ComplexSequenceEvalSet * kmer_ComplexSequenceEvalSet(int kmer_size)
+{
+  ComplexSequenceEvalSet * out;
+
+  out = ComplexSequenceEvalSet_alloc_len(10);
+
+  /* put in bases and codons by default - we may well need them */
+
+  add_ComplexSequenceEvalSet(out,base_number_ComplexSequenceEval());
+  add_ComplexSequenceEvalSet(out,codon_number_ComplexSequenceEval());
+
+  /* this is the more complex kmer */
+
+  add_ComplexSequenceEvalSet(out,kmer_number_ComplexSequenceEval(kmer_size));
+
+  
+  prepare_ComplexSequenceEvalSet(out);
+
+  return (out);
+
+}
+
+
+# line 106 "dualsignal.dy"
+ComplexSequenceEval * kmer_number_ComplexSequenceEval(int kmer_size)
+{
+  ComplexSequenceEval * out;
+  int * d;
+
+  assert(kmer_size > 0 && kmer_size < 21);
+
+  out = ComplexSequenceEval_alloc();
+
+  out->left_window = kmer_size;
+  out->right_window = 0;
+  out->left_lookback = kmer_size +1;
+  out->outside_score = 0;
+  out->eval_func       = kmer_complexseq_eval;
+
+  /* memory leak here like all ComplexSeq Evals. Sigh */
+  d = malloc(sizeof(int));
+  *d = kmer_size;
+  (out->data) = (void *) d;
+
+  return(out);
+
+}
+
+# line 130 "dualsignal.dy"
+int kmer_complexseq_eval(int type,void * data,char * seq)
+{
+  int kmer_size;
+
+  assert(seq != NULL);
+  assert(data != NULL);
+
+  kmer_size = * (int *) data;
+
+  return( forward_dna_number_from_string(seq - kmer_size,kmer_size));
+
+}
+
+# line 143 "dualsignal.dy"
+void show_alignment_with_fit_SimpleSignalMat(AlnBlock * alb,SignalEventList * sel,Sequence * comp,SignalMap * sm,FILE * ofp)
+{
+  AlnColumn * alc;
+  int i = 1;
+
+  char kbuf[10];
+  
+  double obs;
+  double pred;
+
+  kmer_t kmer;
+
+
+  assert(alb != NULL);
+  assert(sel != NULL);
+  assert(comp != NULL);
+  assert(ofp != NULL);
+
+
+
+  fprintf(ofp,"AlnNum\tSigLabel\tSeqLabel\tRawScore\tBitsScore\tSigStart\tSigEnd\tSigMean\tSigStdev\tSigBase\tSigKmer\tSigTimeStart\tSigTimeLen\tSignalFit\tSeqStart\tSeqEnd\tSeqBase\tSeqKmer\tModelMean\n");
+  for(alc=alb->start;alc != NULL;alc = alc->next) {
+
+
+    if( strcmp(alc->alu[0]->text_label,"END") == 0 ) {
+      break;
+    }
+
+    fprintf(ofp,"%d\t",i);
+
+    
+    kmer = forward_dna_number_from_string(comp->seq+alc->alu[1]->end - sm->kbasis,sm->kbasis);
+
+    obs = sel->event[alc->alu[0]->end]->mean;
+    pred = sm->comp[kmer]->mean;
+
+
+    fprintf(ofp,"%s\t%s\t",alc->alu[0]->text_label,alc->alu[1]->text_label);
+
+    fprintf(ofp,"%d\t%f\t",alc->alu[0]->score[0],Score2Bits(alc->alu[0]->score[0]));
+    
+
+
+    if( alc->alu[1]->start > 5 ) {
+      strncpy(kbuf,comp->seq+alc->alu[1]->start-4,5);
+    } else {
+      strncpy(kbuf,"???????????",5);
+    }
+
+
+
+    fprintf(ofp,"%d\t%d\t%f\t%f\t%c\t%s\t%f\t%f\t",
+	    alc->alu[0]->start,
+	    alc->alu[0]->end,
+	    sel->event[alc->alu[0]->end]->mean,
+	    sel->event[alc->alu[0]->end]->std,
+	    sel->event[alc->alu[0]->end]->base,
+	    sel->event[alc->alu[0]->end]->kmer,
+	    sel->event[alc->alu[0]->end]->time_pos,
+	    sel->event[alc->alu[0]->end]->time_length);
+
+    fprintf(ofp,"%f\t",(obs-pred)/sm->comp[kmer]->sd);
+
+    fprintf(ofp,"%d\t%d\t%c\t%.5s\t%f",
+	    alc->alu[1]->start,
+	    alc->alu[1]->end,
+	    comp->seq[alc->alu[1]->start],
+	    kbuf,
+	    pred);
+      
+    fprintf(ofp,"\n");
+	    
+
+    i++;
+  }
+
+}
+
+
+
+# line 223 "dualsignal.dy"
 SignalMap * reverse_SignalMap(SignalMap * sm)
 {
   SignalMap * out;
@@ -52,7 +196,41 @@ SignalMap * reverse_SignalMap(SignalMap * sm)
 
 
 
-# line 114 "dualsignal.dy"
+# line 269 "dualsignal.dy"
+Score Score_offset_RawSignalMap(SignalMap * sm,RawSignalSeq * raw,int i,Sequence * comp,int j)
+{
+  kmer_t kmer;
+  int step;
+
+  assert(sm != NULL);
+  assert(raw != NULL);
+  assert(comp != NULL);
+
+  if( j <= sm->kbasis ) {
+    return NEGI;
+  }
+
+  /*  kmer = forward_dna_number_from_string(comp->seq - sm->kbasis + j,sm->kbasis); */
+  kmer = forward_dna_number_from_string(comp->seq - sm->kbasis + j,sm->kbasis);
+  
+  step = (int)((raw->signal[i] - sm->emission_start) / sm->emission_step);
+/*
+  fprintf(stdout,"Position %d,%d  signal %f, kmer step %d (start %f) score %d\n",i,j,sseq->signal[j],step,sm->emission_start, sm->comp[kmer]->em_score[step]);
+*/
+
+
+
+  if( step < 0 || step >= sm->emission_length ) {
+    return NEGI;
+  } else {
+    /* fprintf(stderr,"for %d,%d, returning kmer %ld step %d - emission %d length %d \n",i,j,kmer,step,sm->emission_length,sm->len); */
+
+    return( sm->comp[kmer]->em_score[step]);
+  }
+
+}
+
+# line 302 "dualsignal.dy"
 Score Score_offset_SignalMap(SignalMap * sm,SignalSeq * sseq,int i,Sequence * comp,int j)
 {
   kmer_t kmer;
@@ -86,7 +264,7 @@ Score Score_offset_SignalMap(SignalMap * sm,SignalSeq * sseq,int i,Sequence * co
 
 }
 
-# line 147 "dualsignal.dy"
+# line 335 "dualsignal.dy"
 boolean flip_coin(Probability p)
 {
   long rnd;
@@ -105,7 +283,7 @@ boolean flip_coin(Probability p)
 
 }
 
-# line 165 "dualsignal.dy"
+# line 353 "dualsignal.dy"
 Probability generate_uniform(void) 
 {
   long myrnd;
@@ -115,7 +293,7 @@ Probability generate_uniform(void)
   return ((double)myrnd / MAXRANDOM);
 }
 
-# line 174 "dualsignal.dy"
+# line 362 "dualsignal.dy"
 double draw_from_normal(double mean,double sd)
 {
   double range;
@@ -127,7 +305,7 @@ double draw_from_normal(double mean,double sd)
   return(mean - (sd *2) + (generate_uniform() * range));
 }
 
-# line 185 "dualsignal.dy"
+# line 373 "dualsignal.dy"
 SignalSim * new_SignalSim(double insert,double stay_insert,double skip)
 {
   SignalSim * out;
@@ -141,8 +319,69 @@ SignalSim * new_SignalSim(double insert,double stay_insert,double skip)
   return(out);
 }
 
+# line 386 "dualsignal.dy"
+RawSignalSeq * simulated_RawSignalSeq_from_Seq(Sequence * seq,SignalMap * sm,SignalSim * sim,int length_of_event)
+{
+  Sequence * true_call;
+  kmer_t kmer;
+  int i;
+  int j;
+  int k;
+  RawSignalSeq * out;
+  
+  char * tempseq;
+  double * signal;
+  double * signal_var;
+  double * time_a;
 
-# line 199 "dualsignal.dy"
+  /** ERROR - not pleasant **/
+
+  /*  fprintf(stderr,"Doing a hack here... %d",seq->len);*/
+
+
+  i = 0;
+  j = 0;
+
+
+  signal = calloc(seq->len*2 * length_of_event,sizeof(double));
+  time_a = calloc(seq->len*2 * length_of_event,sizeof(double));
+  signal_var = calloc(seq->len*2 * length_of_event,sizeof(double));
+
+  while( i < seq->len - sm->kbasis -1  ) {
+    if( flip_coin(sim->skip) == 1 ) {
+      i++;
+      tempseq[j] = tolower(seq->seq[i]);
+      j++;
+      continue;
+    }
+    
+
+    kmer = forward_dna_number_from_string(seq->seq+i,sm->kbasis);
+
+    for(k=0;k<length_of_event;k++) {
+        signal[j] = draw_from_normal(sm->comp[kmer]->mean,sm->comp[kmer]->sd);
+	time_a[j] = 0.02;
+	signal_var[j] = 0.0;
+	j++;
+    }
+
+    i++;
+  }
+
+
+  out = RawSignalSeq_alloc();
+  out->signal = signal;
+  out->time_len = time_a;
+  out->signal_var = signal_var;
+  out->name = stringalloc(seq->name);
+  out->start_time = 0.0;
+  out->len = j;
+  return(out);
+ 
+}
+
+
+# line 447 "dualsignal.dy"
 SignalSeq * simulated_SignalSeq_from_Seq(Sequence * seq,SignalMap * sm,SignalSim * sim)
 {
   Sequence * true_call;
@@ -194,9 +433,148 @@ SignalSeq * simulated_SignalSeq_from_Seq(Sequence * seq,SignalMap * sm,SignalSim
  
 }
 
+# line 498 "dualsignal.dy"
+void write_RawSignalSeq(RawSignalSeq * rss,FILE *ofp)
+{
+  int i;
+  double time_i;
+
+  assert(rss != NULL);
+  assert(ofp != NULL);
+
+  fprintf(ofp,">%s\n",rss->name);
+  fprintf(ofp,"start\tlength\tmean\tstdev\n");
+
+  time_i = rss->start_time;
+
+  for(i=0;i<rss->len;i++) {
+    fprintf(ofp,"%lf\t%lf\t%lf\t%lf\n",time_i,rss->time_len[i],rss->signal[i],rss->signal_var[i]);
+    time_i += rss->time_len[i];
+  }
+
+  fprintf(ofp,"//\n");
 
 
-# line 252 "dualsignal.dy"
+}
+
+
+# line 522 "dualsignal.dy"
+RawSignalSeq * read_RawSignalSeq(FILE * ifp)
+{
+  char buffer[MAXLINE];
+  RawSignalSeq * out;
+  int i;
+  char * seq;
+  char name[MAXLINE];
+  double * signal;	
+  double * time_len;
+  double * signal_var;
+  char * runner;
+  int len;
+  char base;
+  double sig;
+  double time_start;
+  double time_l;
+  double sig_var;
+
+  double time_cum;
+  
+  double start_time;
+
+  
+
+  assert(ifp != NULL);
+
+  if( fgets(name,MAXLINE,ifp) == NULL ) {
+    return NULL;
+  }
+
+  if( name[0] != '>' ) {
+    warn("Bad SignalSequence, not starting with >");
+  } else {
+    runner = name+1;
+    while( isalnum(*runner) || *runner == '_' ) {
+      runner++;
+    }
+
+    (*runner) = '\0';
+  }
+  
+  seq = calloc(DUALSIGNAL_INIT_SIZE,sizeof(char));
+  signal = calloc(DUALSIGNAL_INIT_SIZE,sizeof(double));
+  signal_var = calloc(DUALSIGNAL_INIT_SIZE,sizeof(double));
+  time_len = calloc(DUALSIGNAL_INIT_SIZE,sizeof(double));
+  len = DUALSIGNAL_INIT_SIZE;
+    
+  i = 0;
+
+  assert(ifp != NULL);
+
+
+  while( fgets(buffer,MAXLINE,ifp) != NULL) {
+
+    if( buffer[0] == '/' && buffer[1] == '/' ) {
+      break;
+    }
+
+    if( strstartcmp(buffer,"start") == 0 ) {
+      continue;
+    }
+
+    /* this is what we expect start-time time-length mean-signal stddev */
+
+    sscanf(buffer,"%lf %lf %lf %lf\n",&time_start,&time_l,&sig,&sig_var);
+
+    
+
+    /*    fprintf(stderr,"reading %c %f\n",base,sig); */
+
+    signal[i] = sig;
+    time_len[i] = time_l;
+    signal_var[i] = sig_var;
+    if( i == 0 ) {
+      start_time = time_start;
+      time_cum = start_time;
+    } else {
+      if( abs(time_cum + time_l - time_start) > 0.001 ) {
+	warn("No adjacent times in Raw Signal input. Offsets are going to come out wrong!");
+      } else {
+	/* nothing */
+      }
+      
+      time_cum += time_l;
+    }
+
+    
+
+    i++;
+    if( i >= len ) {
+      signal = realloc(signal,len*2*sizeof(double));
+      time_len = realloc(time_len,len*2*sizeof(double));
+      signal_var = realloc(signal_var,len*2*sizeof(double));
+      len = len*2;
+    }
+  }
+
+
+  out = RawSignalSeq_alloc();
+ 
+  out->name = stringalloc(name+1);
+
+  out->signal = signal;
+  out->time_len = time_len;
+  out->signal_var = signal_var;
+  out->start_time = start_time;
+
+  out->len = i;
+
+  return(out);
+
+}
+
+
+
+# line 637 "dualsignal.dy"
 SignalSeq * read_SignalSeq(FILE * ifp)
 {
   char buffer[MAXLINE];
@@ -280,7 +658,7 @@ SignalSeq * read_SignalSeq(FILE * ifp)
 
 }
 
-# line 335 "dualsignal.dy"
+# line 720 "dualsignal.dy"
 void write_SignalSeq(SignalSeq * ss,FILE * ofp)
 {
   int i;
@@ -297,7 +675,7 @@ void write_SignalSeq(SignalSeq * ss,FILE * ofp)
  
 }
 
-# line 351 "dualsignal.dy"
+# line 736 "dualsignal.dy"
 void write_SignalMap_absolute(SignalMap * sm,FILE * ofp)
 {
   int i;
@@ -326,7 +704,7 @@ void write_SignalMap_absolute(SignalMap * sm,FILE * ofp)
   return;
 }
 
-# line 379 "dualsignal.dy"
+# line 764 "dualsignal.dy"
 void dump_SignalMap_Scores(SignalMap * sm, FILE * ofp)
 {
   int i;
@@ -357,7 +735,7 @@ void dump_SignalMap_Scores(SignalMap * sm, FILE * ofp)
 
 }
 
-# line 409 "dualsignal.dy"
+# line 794 "dualsignal.dy"
 void write_SignalMap_normal(SignalMap * sm,FILE * ofp)
 {
   int i;
@@ -376,7 +754,7 @@ void write_SignalMap_normal(SignalMap * sm,FILE * ofp)
 
 }
 
-# line 427 "dualsignal.dy"
+# line 812 "dualsignal.dy"
 void prepare_SignalMap(SignalMap * sm,double pseudocount)
 {
   int i;
@@ -420,7 +798,7 @@ void prepare_SignalMap(SignalMap * sm,double pseudocount)
   
 }
 
-# line 470 "dualsignal.dy"
+# line 855 "dualsignal.dy"
 void convert_normal_to_absolute_SignalMap(SignalMap * sm,double weight)
 {
   int i,j;
@@ -516,7 +894,7 @@ void convert_normal_to_absolute_SignalMap(SignalMap * sm,double weight)
 }
 
 
-# line 565 "dualsignal.dy"
+# line 950 "dualsignal.dy"
 void convert_weight_to_Probability_SignalMap(SignalMap * sm)
 {
   int i;
@@ -540,7 +918,7 @@ void convert_weight_to_Probability_SignalMap(SignalMap * sm)
 
 }
 
-# line 588 "dualsignal.dy"
+# line 973 "dualsignal.dy"
 SignalMap * read_SignalMap_absolute(FILE * ifp)
 {
   char buffer[MAXLINE];
@@ -662,7 +1040,7 @@ SignalMap * read_SignalMap_absolute(FILE * ifp)
   return(out);
 }
 
-# line 709 "dualsignal.dy"
+# line 1094 "dualsignal.dy"
 SignalMap * read_SignalMap_tsv(int ksize,FILE * ifp)
 {
  char buffer[MAXLINE];
@@ -717,7 +1095,7 @@ SignalMap * read_SignalMap_tsv(int ksize,FILE * ifp)
 }
 
 
-# line 763 "dualsignal.dy"
+# line 1148 "dualsignal.dy"
 boolean validate_SignalMap_with_warnings(SignalMap * sm)
 {
   int i;
@@ -743,7 +1121,7 @@ boolean validate_SignalMap_with_warnings(SignalMap * sm)
 }
 
 
-# line 788 "dualsignal.dy"
+# line 1173 "dualsignal.dy"
 SignalMap * read_SignalMap_normal(FILE * ifp)
 {
   char buffer[MAXLINE];
@@ -803,7 +1181,7 @@ SignalMap * read_SignalMap_normal(FILE * ifp)
 
 
 
-# line 847 "dualsignal.dy"
+# line 1232 "dualsignal.dy"
 SignalMap * SignalMap_alloc_len(int len)
 {
   SignalMap * out = NULL;
@@ -819,7 +1197,7 @@ SignalMap * SignalMap_alloc_len(int len)
 }
 
 
-# line 862 "dualsignal.dy"
+# line 1247 "dualsignal.dy"
 SignalSeq * SignalSeq_from_SignalEventList(SignalEventList * sel)
 {
   int i;
@@ -848,7 +1226,7 @@ SignalSeq * SignalSeq_from_SignalEventList(SignalEventList * sel)
 
 }
 
-# line 890 "dualsignal.dy"
+# line 1275 "dualsignal.dy"
 void write_SignalEventList(SignalEventList * sel,FILE * ofp)
 {
   int i;
@@ -869,11 +1247,11 @@ void write_SignalEventList(SignalEventList * sel,FILE * ofp)
 	    sel->event[i]->time_length);
   }
 
-
+  fprintf(ofp,"//\n");
 }
 
 
-# line 914 "dualsignal.dy"
+# line 1299 "dualsignal.dy"
 SignalEventList * read_SignalEventList(FILE * ifp)
 {
   char buffer[MAXLINE];
@@ -950,7 +1328,7 @@ SignalEventList * read_SignalEventList(FILE * ifp)
 
 
 
-# line 952 "dualsignal.c"
+# line 1330 "dualsignal.c"
 /* Function:  hard_link_SignalEvent(obj)
  *
  * Descrip:    Bumps up the reference count of the object
@@ -1351,6 +1729,112 @@ SignalEventList * free_SignalEventList(SignalEventList * obj)
         }  
       ckfree(obj->event);    
       }  
+
+
+    ckfree(obj); 
+    return NULL; 
+}    
+
+
+/* Function:  hard_link_RawSignalSeq(obj)
+ *
+ * Descrip:    Bumps up the reference count of the object
+ *             Meaning that multiple pointers can 'own' it
+ *
+ *
+ * Arg:        obj [UNKN ] Object to be hard linked [RawSignalSeq *]
+ *
+ * Return [UNKN ]  Undocumented return value [RawSignalSeq *]
+ *
+ */
+RawSignalSeq * hard_link_RawSignalSeq(RawSignalSeq * obj) 
+{
+    if( obj == NULL )    {  
+      warn("Trying to hard link to a RawSignalSeq object: passed a NULL object");    
+      return NULL;   
+      }  
+    obj->dynamite_hard_link++;   
+    return obj;  
+}    
+
+
+/* Function:  RawSignalSeq_alloc(void)
+ *
+ * Descrip:    Allocates structure: assigns defaults if given 
+ *
+ *
+ *
+ * Return [UNKN ]  Undocumented return value [RawSignalSeq *]
+ *
+ */
+RawSignalSeq * RawSignalSeq_alloc(void) 
+{
+    RawSignalSeq * out; /* out is exported at end of function */ 
+
+
+    /* call ckalloc and see if NULL */ 
+    if((out=(RawSignalSeq *) ckalloc (sizeof(RawSignalSeq))) == NULL)    {  
+      warn("RawSignalSeq_alloc failed ");    
+      return NULL;  /* calling function should respond! */ 
+      }  
+    out->dynamite_hard_link = 1; 
+#ifdef PTHREAD   
+    pthread_mutex_init(&(out->dynamite_mutex),NULL);     
+#endif   
+    out->signal = NULL;  
+    out->time_len = NULL;    
+    out->signal_var = NULL;  
+    out->len = 0;    
+    out->start_time = 0; 
+    out->name = NULL;    
+
+
+    return out;  
+}    
+
+
+/* Function:  free_RawSignalSeq(obj)
+ *
+ * Descrip:    Free Function: removes the memory held by obj
+ *             Will chain up to owned members and clear all lists
+ *
+ *
+ * Arg:        obj [UNKN ] Object that is free'd [RawSignalSeq *]
+ *
+ * Return [UNKN ]  Undocumented return value [RawSignalSeq *]
+ *
+ */
+RawSignalSeq * free_RawSignalSeq(RawSignalSeq * obj) 
+{
+    int return_early = 0;    
+
+
+    if( obj == NULL) {  
+      warn("Attempting to free a NULL pointer to a RawSignalSeq obj. Should be trappable");  
+      return NULL;   
+      }  
+
+
+#ifdef PTHREAD   
+    assert(pthread_mutex_lock(&(obj->dynamite_mutex)) == 0); 
+#endif   
+    if( obj->dynamite_hard_link > 1)     {  
+      return_early = 1;  
+      obj->dynamite_hard_link--; 
+      }  
+#ifdef PTHREAD   
+    assert(pthread_mutex_unlock(&(obj->dynamite_mutex)) == 0);   
+#endif   
+    if( return_early == 1)   
+      return NULL;   
+    if( obj->signal != NULL) 
+      ckfree(obj->signal);   
+    if( obj->time_len != NULL)   
+      ckfree(obj->time_len);     
+    if( obj->signal_var != NULL) 
+      ckfree(obj->signal_var);   
+    if( obj->name != NULL)   
+      ckfree(obj->name);     
 
 
     ckfree(obj); 

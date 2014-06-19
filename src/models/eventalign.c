@@ -5,12 +5,14 @@ extern "C" {
 
 
 
-# line 7 "eventalign.c"
+
+
+# line 9 "eventalign.c"
 
 
   /*****************   C functions  ****************/
   /*             Written using dynamite            */
-  /*            Fri Mar 14 17:10:38 2014           */
+  /*            Thu Apr 17 09:17:28 2014           */
   /*            email birney@sanger.ac.uk          */
   /* http://www.sanger.ac.uk/Users/birney/dynamite */
   /*************************************************/

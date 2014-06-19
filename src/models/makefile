@@ -338,8 +338,11 @@ pseudowise : pseudowise.o pseudowise7.o $(NEWG)
 clonewise : clonewise.o clonewisedp.o localclonewisedp.o mapstruct.o
 	$(CC) -g -o clonewise clonewise.o clonewisedp.o localclonewisedp.o mapstruct.o $(LFLAGS)  -ldyna -lwisebase  $(EXTRALIBS)
 
-porewise : porewise.o dualsignal.o signalalign.o 
-	$(CC) -g -o porewise porewise.o dualsignal.o signalalign.o  $(LFLAGS) -ldyna -lwisebase  $(EXTRALIBS) -lm
+porewise : porewise.o dualsignal.o signalalign.o eventalign.o 
+	$(CC) -g -o porewise porewise.o dualsignal.o signalalign.o eventalign.o $(LFLAGS) -ldyna -lwisebase  $(EXTRALIBS) -lm
+
+simulate_signal : simulate_signal.o dualsignal.o
+	$(CC) -g -o simulate_signal simulate_signal.o dualsignal.o $(LFLAGS) -ldyna -lwisebase  $(EXTRALIBS) -lm
 
 
 

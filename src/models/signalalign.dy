@@ -7,76 +7,85 @@
 %}
 
 
+struct RawSignalMatParaProb
+Probability single_event_signal
+Probability double_event_signal
+Probability triple_event_signal
+Probability quad_event_signal
+Probability event_ext
+Probability between_event_signal
+Probability between_event_ext
+Probability rogue_signal
+Probability rogue_ext
+Probability dark_kmer
 
-matrix SimpleSignalMat
-query  type="SignalSeq*"  name="query"
-target  type="Sequence*"  name="target"
+struct RawSignalMatParaScore
+Score single_event_signal
+Score double_event_signal
+Score triple_event_signal
+Score quad_event_signal
+Score event_ext
+Score between_event_signal
+Score between_event_ext
+Score rogue_signal
+Score rogue_ext
+Score dark_kmer
+
+
+
+matrix RawSignalMat
+query  type="Sequence*"  name="seq"
+target  type="RawSignalSeq*"  name="signal"
 resource type="SignalMap*" name="sm"
-resource type="Score" name="gap"
-resource type="Score" name="gapext"
-resource type="Score" name="seqdiff_open"
-resource type="Score" name="seqdiff_ext"
-state MATCH offi="1" offj="1" 
-	calc="Score_offset_SignalMap(sm,query,i,target,j)"
-	source DIFF_SEQ
-                calc="0"
+resource type="RawSignalMatParaScore*" name="para"
+state MATCH 
+        source BETWEEN offj="1" offi="0"
+                calc="Score_offset_RawSignalMap(sm,signal,j,seq,i) + para->single_event_signal"
                 endsource
-	source MATCH
+        source BETWEEN offj="2" offi="0"
+                calc="Score_offset_RawSignalMap(sm,signal,j,seq,i) + Score_offset_RawSignalMap(sm,signal,j-1,seq,i) + para->double_event_signal"
+                endsource
+        source BETWEEN offj="3" offi="0"
+                calc="Score_offset_RawSignalMap(sm,signal,j,seq,i) + Score_offset_RawSignalMap(sm,signal,j-1,seq,i) + Score_offset_RawSignalMap(sm,signal,j-2,seq,i) + para->triple_event_signal"
+                endsource
+        source BETWEEN offj="4" offi="0"
+                calc="Score_offset_RawSignalMap(sm,signal,j,seq,i) + Score_offset_RawSignalMap(sm,signal,j-1,seq,i) + Score_offset_RawSignalMap(sm,signal,j-2,seq,i) + Score_offset_RawSignalMap(sm,signal,j-3,seq,i) + para->quad_event_signal"
+                endsource
+	source MATCH offj="1" offi="0"
+               calc="Score_offset_RawSignalMap(sm,signal,j,seq,i) + para->event_ext"
+               endsource  
+        source ROGUE offj="1" offi="0"
+               calc="Score_offset_RawSignalMap(sm,signal,j,seq,i)"
+               endsource               
+	source START offj="1" offi="1"
 		calc="0"
 		endsource
-	source INSERT_SIGNAL
-		calc="0"
-		endsource
-	source DELETE
-		calc="0"
-		endsource
-	source START
-		calc="0"
-		endsource
-	query_label  SIGNAL_MATCH
-	target_label SEQUENCE
+	query_label  SEQUENCE
+	target_label SIGNAL_MATCH
 endstate
-state INSERT_SIGNAL offi="0" offj="1"
-	source MATCH
-		calc="gap"
-		endsource
-	source INSERT_SIGNAL
-		calc="gapext"
-		endsource
-	query_label  SIGNAL_DARK
-	target_label  SEQUENCE
+state BETWEEN
+         source MATCH offj="0" offi="1"
+                calc="0"
+                query_label BETWEEN_NO_MOVE
+                target_label BETWEEN_NO_MOVE
+                endsource
+         source BETWEEN offj="1" offi="0"
+                calc="para->between_event_signal"
+                query_label BETWEEN_SEQ
+                target_label BETWEEN_SIGNAL
+                endsource
 endstate
-state DELETE offi="1" offj="0"
-	source MATCH
-		calc="gap"
-		endsource
-        source DELETE offi="1" offj="1"
-               calc="gapext"
-               endsource
-        source DELETE offi="0" offj="1"
-               calc="gapext"
-                endsource  
-	source DELETE
-		calc="gapext"
-		endsource
-	query_label  SIGNAL_NOVO
-	target_label GAP
-endstate
-state DIFF_SEQ 
-      source MATCH offi="5" offj="5"
-            calc="seqdiff_open + seqdiff_ext"
-            endsource
-      source MATCH offi="6" offj="6"
-            calc="seqdiff_open"
-            endsource
-      source DIFF_SEQ offi="1" offj="0"
-            calc="seqdiff_ext"
-            endsource
-      source DIFF_SEQ offi="0" offj="1"
-            calc="seqdiff_ext"
-            endsource
-      query_label DIFF_SIGNAL 
-      target_label DIFF_SEQ
+state ROGUE
+         source MATCH offj="1" offi="0"
+                calc="para->rogue_signal"
+                query_label ROGUE_SEQUENCE
+                target_label ROGUE_SIGNAL
+                endsource
+         source ROGUE offj="1" offi="0"
+                calc="para->rogue_ext"
+                query_label ROGUE_SEQUENCE
+                target_label ROGUE_SIGNAL
+                endsource
 endstate
 state START !special !start
 	query_label  START
@@ -96,83 +105,384 @@ endmatrix
 #include "signalalign.h"
 
 
+SignalEventList * implied_event_from_RawSignalSeq_align(Sequence * seq,RawSignalSeq * rss,SignalMap * sm,AlnBlock * alb)
+{
 
-void show_alignment_with_fit_SimpleSignalMat(AlnBlock * alb,SignalEventList * sel,Sequence * comp,SignalMap * sm,FILE * ofp)
+  AlnColumn * alc;
+  int i = 1;
+
+  char kbuf[64];
+
+  double sigtime_off;
+  int signal_start;
+  int signal_end;
+  long int rawscore_acc;
+  double totalsignal;
+  int rogue_number;
+  int sequence_count;
+
+  double sigtimestart;
+  double sigtimelen;
+  int t;
+  double mean_sig;
+  double sig_var;
+  double diff;
+
+  int seq_start;
+  int seq_end;
+
+  int kmer;
+  double pred;
+
+  SignalEventList * out;
+  SignalEvent * event;
+
+  
+  out = SignalEventList_alloc_std();
+
+  out->name = stringalloc(rss->name);
+
+  assert(seq  != NULL);
+  assert(rss  != NULL);
+  assert(alb  != NULL);
+  assert(sm   != NULL);
+
+
+  for(alc=alb->start;alc != NULL;alc = alc->next) {
+    
+    
+    if( strcmp(alc->alu[0]->text_label,"END") == 0 ) {
+      break;
+    }
+
+    i++;
+    
+    /* this should be a SEQUENCE MATCH - move forward until it is */
+
+    for(;alc != NULL && strcmp(alc->alu[0]->text_label,"SEQUENCE") != 0;alc = alc->next)
+      ;
+
+    if( alc == NULL ) {
+      break;
+    }
+
+    seq_start = alc->alu[0]->end;
+
+    /* work out starting signal time point */
+    sigtime_off = 0.0;
+    for(t = 0;t < alc->alu[1]->start;t++) {
+      sigtime_off += rss->time_len[t];
+    }
+
+    signal_start = alc->alu[1]->start;
+    sigtimestart = rss->start_time + sigtime_off;
+
+    rawscore_acc = 0;
+    totalsignal = 0.0;
+    rogue_number = 0;
+    sequence_count = 0;
+
+    sigtimelen = 0.0;
+
+    /* now move along, eating up SEQUENCE and ROGUE_SEQUENCE cases */
+
+    
+    for(;alc != NULL && (strcmp(alc->alu[0]->text_label,"SEQUENCE") == 0 || strcmp(alc->alu[0]->text_label,"ROGUE_SEQUENCE") == 0);alc = alc->next) {
+      rawscore_acc += alc->alu[0]->score[0];
+      if( strcmp(alc->alu[0]->text_label,"ROGUE_SEQUENCE") == 0 ) {
+	rogue_number++;
+      }
+      /* we have to step through the span */
+      for(t=alc->alu[1]->start;t < alc->alu[1]->end;t++) {
+	  sigtimelen += rss->time_len[t];
+      }
+
+      totalsignal += rss->signal[alc->alu[1]->end];
+      sequence_count++;
+    }
+      
+    seq_end = alc->alu[0]->end;
+    
+    /* this is now at the end of this sequence */
+
+    signal_end = alc->alu[1]->end;
+
+    /* calculate mean */
+
+    mean_sig = totalsignal / sequence_count;
+
+    /* now go back to calculate variance */
+
+    sig_var = 0.0;
+    
+    for(t = signal_start;t < signal_end;t++) {
+      diff = (rss->signal[t] - mean_sig);
+
+      sig_var += (diff * diff);
+    }
+
+    sig_var = sig_var / sequence_count;
+    
+
+    if( alc->alu[0]->start > 5 && alc->alu[0]->end +1 < seq->len) {
+      strncpy(kbuf,seq->seq+alc->alu[0]->start-4,5);
+      kmer = forward_dna_number_from_string(seq->seq+alc->alu[0]->end - sm->kbasis,sm->kbasis);
+      kbuf[5] = '\0';
+    } else {
+      kmer = 1;
+      strncpy(kbuf,"??????",5);
+    }
+	    
+    event = SignalEvent_alloc();
+
+    event->base = kbuf[4];
+    strncpy(event->kmer,kbuf,5);
+    event->mean = mean_sig;
+    event->std = sqrt(sig_var);
+    event->time_pos = sigtimestart;
+    event->time_length = sigtimelen;
+
+    add_SignalEventList(out,event);
+  }
+
+
+  return(out);
+}
+
+
+void show_fit_RawSignalMat(Sequence * seq,RawSignalSeq * rss,RawSignalMatParaScore * rsmp,SignalMap * sm,AlnBlock * alb,FILE * ofp)
 {
   AlnColumn * alc;
   int i = 1;
 
-  char kbuf[10];
-  
-  double obs;
+  char kbuf[64];
+
+  double sigtime_off;
+  int signal_start;
+  int signal_end;
+  long int rawscore_acc;
+  double totalsignal;
+  int rogue_number;
+  int sequence_count;
+
+  double sigtimestart;
+  double sigtimelen;
+  int t;
+  double mean_sig;
+  double sig_var;
+  double diff;
+
+  int seq_start;
+  int seq_end;
+
+  int kmer;
   double pred;
 
-  kmer_t kmer;
+  assert(seq  != NULL);
+  assert(rss  != NULL);
+  assert(rsmp != NULL);
+  assert(alb  != NULL);
+  assert(ofp  != NULL);
 
-
-  assert(alb != NULL);
-  assert(sel != NULL);
-  assert(comp != NULL);
-  assert(ofp != NULL);
-
-
-
-  fprintf(ofp,"AlnNum\tSigLabel\tSeqLabel\tRawScore\tBitsScore\tSigStart\tSigEnd\tSigMean\tSigStdev\tSigBase\tSigKmer\tSigTimeStart\tSigTimeLen\tSignalFit\tSeqStart\tSeqEnd\tSeqBase\tSeqKmer\tModelMean\n");
+  
+  fprintf(ofp,"AlnNum\tSigLabel\tSeqLabel\tRawScore\tBitsScore\tSigStart\tSigEnd\tSigMean\tSigStdev\tSigBase\tSigKmer\tSigTimeStart\tSigTimeLen\tSignalFit\tSeqStart\tSeqEnd\tSeqBase\tSeqKmer\tModelMean\tRogueSignal\n");
+  
   for(alc=alb->start;alc != NULL;alc = alc->next) {
-
-
+    
+    
     if( strcmp(alc->alu[0]->text_label,"END") == 0 ) {
       break;
     }
 
     fprintf(ofp,"%d\t",i);
-
+    i++;
     
-    kmer = forward_dna_number_from_string(comp->seq+alc->alu[1]->end - sm->kbasis,sm->kbasis);
+    /* this should be a SEQUENCE MATCH - move forward until it is */
 
-    obs = sel->event[alc->alu[0]->end]->mean;
-    pred = sm->comp[kmer]->mean;
+    for(;alc != NULL && strcmp(alc->alu[0]->text_label,"SEQUENCE") != 0;alc = alc->next)
+      ;
 
-
-    fprintf(ofp,"%s\t%s\t",alc->alu[0]->text_label,alc->alu[1]->text_label);
-
-    fprintf(ofp,"%d\t%f\t",alc->alu[0]->score[0],Score2Bits(alc->alu[0]->score[0]));
-    
-
-
-    if( alc->alu[1]->start > 5 ) {
-      strncpy(kbuf,comp->seq+alc->alu[1]->start-4,5);
-    } else {
-      strncpy(kbuf,"???????????",5);
+    if( alc == NULL ) {
+      break;
     }
 
+    seq_start = alc->alu[0]->end;
 
+    /* work out starting signal time point */
+    sigtime_off = 0.0;
+    for(t = 0;t < alc->alu[1]->start;t++) {
+      sigtime_off += rss->time_len[t];
+    }
 
-    fprintf(ofp,"%d\t%d\t%f\t%f\t%c\t%s\t%f\t%f\t",
-	    alc->alu[0]->start,
-	    alc->alu[0]->end,
-	    sel->event[alc->alu[0]->end]->mean,
-	    sel->event[alc->alu[0]->end]->std,
-	    sel->event[alc->alu[0]->end]->base,
-	    sel->event[alc->alu[0]->end]->kmer,
-	    sel->event[alc->alu[0]->end]->time_pos,
-	    sel->event[alc->alu[0]->end]->time_length);
+    signal_start = alc->alu[1]->start;
+    sigtimestart = rss->start_time + sigtime_off;
 
-    fprintf(ofp,"%f\t",(obs-pred)/sm->comp[kmer]->sd);
+    rawscore_acc = 0;
+    totalsignal = 0.0;
+    rogue_number = 0;
+    sequence_count = 0;
 
-    fprintf(ofp,"%d\t%d\t%c\t%.5s\t%f",
-	    alc->alu[1]->start,
-	    alc->alu[1]->end,
-	    comp->seq[alc->alu[1]->start],
-	    kbuf,
-	    pred);
+    sigtimelen = 0.0;
+
+    /* now move along, eating up SEQUENCE and ROGUE_SEQUENCE cases */
+
+    
+    for(;alc != NULL && (strcmp(alc->alu[0]->text_label,"SEQUENCE") == 0 || strcmp(alc->alu[0]->text_label,"ROGUE_SEQUENCE") == 0);alc = alc->next) {
+      rawscore_acc += alc->alu[0]->score[0];
+      if( strcmp(alc->alu[0]->text_label,"ROGUE_SEQUENCE") == 0 ) {
+	rogue_number++;
+      }
+      /* we have to step through the span */
+      for(t=alc->alu[1]->start;t < alc->alu[1]->end;t++) {
+	  sigtimelen += rss->time_len[t];
+      }
+
+      totalsignal += rss->signal[alc->alu[1]->end];
+      sequence_count++;
+    }
       
-    fprintf(ofp,"\n");
+    seq_end = alc->alu[0]->end;
+    
+    /* this is now at the end of this sequence */
+
+    signal_end = alc->alu[1]->end;
+
+    /* calculate mean */
+
+    mean_sig = totalsignal / sequence_count;
+
+    /* now go back to calculate variance */
+
+    sig_var = 0.0;
+    
+    for(t = signal_start;t < signal_end;t++) {
+      diff = (rss->signal[t] - mean_sig);
+
+      sig_var += (diff * diff);
+    }
+
+    sig_var = sig_var / sequence_count;
+    
+
+    if( alc->alu[0]->start > 5 && alc->alu[0]->end +1 < seq->len) {
+      strncpy(kbuf,seq->seq+alc->alu[0]->start-4,5);
+      kmer = forward_dna_number_from_string(seq->seq+alc->alu[0]->end - sm->kbasis,sm->kbasis);
+      kbuf[5] = '\0';
+    } else {
+      kmer = 1;
+      strncpy(kbuf,"??????",5);
+    }
 	    
 
-    i++;
+
+    if( kmer >= 1 && kmer < sm->len ) 
+      pred = sm->comp[kmer]->mean;
+
+
+    
+    /* ok, now ready to output ! */
+
+    fprintf(ofp,"SIGNAL\tSEQUENCE\t%ld\t%f\t%d\t%d\t%f\t%f\t?\t?\t%f\t%f\t0.0\t%d\t%d\t%c\t%s\t%f\t%d\n",
+	    rawscore_acc,
+	    Score2Bits(rawscore_acc),
+	    signal_start,
+	    signal_end,
+	    mean_sig,
+	    sqrt(sig_var),
+	    sigtimestart,
+	    sigtimelen,
+	    seq_start,
+	    seq_end,
+	    kbuf[4],
+	    kbuf,
+	    pred,
+	    rogue_number);
+	    
+	    
+
   }
 
+  fprintf(ofp,"//\n");
+
+}
+void show_help_RawSignalMatParaProb_from_argv(FILE * ofp)
+{
+  assert(ofp != NULL);
+
+  fprintf(ofp,"Raw Signal alignment parameters\n");
+  fprintf(ofp,"  -raw_single [0.05] - Probability of a single signal kmer\n");
+  fprintf(ofp,"  -raw_double [0.15] - Probability of a double signal kmer\n");
+  fprintf(ofp,"  -raw_triple [0.4]  - Probability of a triple signal kmer\n");
+  fprintf(ofp,"  -raw_quad   [0.4]  - Probability of a quad or more signal kmer\n");
+  fprintf(ofp,"  -raw_event_ext   [0.5]   - Extension beyond 4 signal kmer\n");
+  fprintf(ofp,"  -raw_between     [0.05]  - Probability of a between kmer signal\n");
+  fprintf(ofp,"  -raw_between_ext [0.2]   - Extension of inter-kmer signal\n");
+  fprintf(ofp,"  -raw_rogue       [0.01]  - Probability of rogue signal inside a kmer\n");
+  fprintf(ofp,"  -raw_rogue_ext [0.5]  - Extension beyond 4 signal kmer\n");
+
+
+
+
+}
+
+RawSignalMatParaScore * make_RawSignalMatParaScore(RawSignalMatParaProb * rsmp)
+{
+  RawSignalMatParaScore * out;
+
+  assert(rsmp != NULL);
+
+  out = RawSignalMatParaScore_alloc();
+
+  out->single_event_signal  = Probability2Score(rsmp->single_event_signal);
+  out->double_event_signal  = Probability2Score(rsmp->double_event_signal);
+  out->triple_event_signal  = Probability2Score(rsmp->triple_event_signal);
+  out->quad_event_signal    = Probability2Score(rsmp->quad_event_signal);
+  out->event_ext            = Probability2Score(rsmp->event_ext);
+  out->between_event_signal = Probability2Score(rsmp->between_event_signal);
+  out->between_event_ext    = Probability2Score(rsmp->between_event_ext);
+  out->rogue_signal         = Probability2Score(rsmp->rogue_signal);
+  out->rogue_ext            = Probability2Score(rsmp->rogue_ext);
+  out->dark_kmer            = Probability2Score(rsmp->dark_kmer);
+
+  return(out);
+
+}
+
+RawSignalMatParaProb * new_RawSignalMatParaProb_from_argv(int * argc,char ** argv)
+{
+  RawSignalMatParaProb * out;
+
+  out = RawSignalMatParaProb_alloc();
+
+  out->single_event_signal = 0.05;
+  out->double_event_signal = 0.15;
+  out->triple_event_signal = 0.4;
+  out->quad_event_signal   = 0.4;
+
+  out->event_ext = 0.5;
+
+  out->between_event_signal = 0.05;
+  out->between_event_ext = 0.2;
+
+  out->rogue_signal = 0.01;
+  out->rogue_ext    = 0.05;
+
+  out->dark_kmer    = 0.01;
+
+
+  strip_out_float_argument(argc,argv,"raw_single",&out->single_event_signal);
+  strip_out_float_argument(argc,argv,"raw_double",&out->double_event_signal);
+  strip_out_float_argument(argc,argv,"raw_triple",&out->triple_event_signal);
+  strip_out_float_argument(argc,argv,"raw_quad",&out->quad_event_signal);
+  strip_out_float_argument(argc,argv,"raw_event_ext",&out->event_ext);
+  strip_out_float_argument(argc,argv,"raw_between",&out->between_event_signal);
+  strip_out_float_argument(argc,argv,"raw_between_ext",&out->between_event_ext);
+  strip_out_float_argument(argc,argv,"raw_rogue",&out->rogue_signal);
+  strip_out_float_argument(argc,argv,"raw_rogue_ext",&out->rogue_ext);
+  strip_out_float_argument(argc,argv,"raw_dark",&out->dark_kmer);
+
+
+  return(out);
 }
 
 %}

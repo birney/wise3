@@ -92,10 +92,14 @@ extern char * calc_lex_string;
 extern int stringpos;
 
 
+void yyerror(const char *);
+
+
+
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
-# define YYDEBUG 1
+# define YYDEBUG 0
 #endif
 
 /* Enabling verbose error messages.  */
@@ -113,13 +117,13 @@ extern int stringpos;
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 12 "calc.y"
+#line 16 "calc.y"
 {
 	double dval;
 	struct ExprTree *  tr;
 }
 /* Line 193 of yacc.c.  */
-#line 123 "y.tab.c"
+#line 127 "y.tab.c"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
@@ -132,7 +136,7 @@ typedef union YYSTYPE
 
 
 /* Line 216 of yacc.c.  */
-#line 136 "y.tab.c"
+#line 140 "y.tab.c"
 
 #ifdef short
 # undef short
@@ -421,8 +425,8 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    25,    25,    36,    39,    44,    47,    50,    53,    56,
-      57,    58,    59,    62,    63,    66,    67,    68,    69,    70
+       0,    29,    29,    40,    43,    48,    51,    54,    57,    60,
+      61,    62,    63,    66,    67,    70,    71,    72,    73,    74
 };
 #endif
 
@@ -1343,7 +1347,7 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 25 "calc.y"
+#line 29 "calc.y"
     { 
 	(yyval.tr) = new_ExprTree();
 	(yyval.tr)->type = ETR_STATEMENT;
@@ -1356,105 +1360,105 @@ yyreduce:
     break;
 
   case 3:
-#line 36 "calc.y"
+#line 40 "calc.y"
     {
 	(yyval.tr) = new_ExprTree_method((yyvsp[(1) - (4)].tr),(yyvsp[(3) - (4)].tr));
 	}
     break;
 
   case 4:
-#line 39 "calc.y"
+#line 43 "calc.y"
     {
 	(yyval.tr) = new_ExprTree_method((yyvsp[(1) - (3)].tr),NULL);
 	}
     break;
 
   case 5:
-#line 44 "calc.y"
+#line 48 "calc.y"
     { 
 	(yyval.tr) = new_ExprTree_binary_expr((yyvsp[(1) - (3)].tr),'+',(yyvsp[(3) - (3)].tr));
 	}
     break;
 
   case 6:
-#line 47 "calc.y"
+#line 51 "calc.y"
     {
 	(yyval.tr) = new_ExprTree_binary_expr((yyvsp[(1) - (3)].tr),'-',(yyvsp[(3) - (3)].tr));
 	}
     break;
 
   case 7:
-#line 50 "calc.y"
+#line 54 "calc.y"
     {
 	(yyval.tr) = new_ExprTree_binary_expr((yyvsp[(1) - (3)].tr),'*',(yyvsp[(3) - (3)].tr));
 	}
     break;
 
   case 8:
-#line 53 "calc.y"
+#line 57 "calc.y"
     {
 	(yyval.tr) = new_ExprTree_binary_expr((yyvsp[(1) - (3)].tr),'/',(yyvsp[(3) - (3)].tr));
 	}
     break;
 
   case 9:
-#line 56 "calc.y"
+#line 60 "calc.y"
     { (yyval.tr) = (yyvsp[(2) - (3)].tr); }
     break;
 
   case 10:
-#line 57 "calc.y"
+#line 61 "calc.y"
     { (yyval.tr) = (yyvsp[(1) - (1)].tr); }
     break;
 
   case 11:
-#line 58 "calc.y"
+#line 62 "calc.y"
     { (yyval.tr) = (yyvsp[(1) - (1)].tr); }
     break;
 
   case 12:
-#line 59 "calc.y"
+#line 63 "calc.y"
     { (yyval.tr) = (yyvsp[(1) - (1)].tr); }
     break;
 
   case 13:
-#line 62 "calc.y"
+#line 66 "calc.y"
     { (yyval.tr) = add_to_commalist_ExprTree((yyvsp[(1) - (3)].tr),(yyvsp[(3) - (3)].tr)); }
     break;
 
   case 14:
-#line 63 "calc.y"
+#line 67 "calc.y"
     { (yyval.tr) = new_ExprTree_commalist((yyvsp[(1) - (1)].tr)); }
     break;
 
   case 15:
-#line 66 "calc.y"
+#line 70 "calc.y"
     { (yyval.tr) = new_ExprTree_tag_from_name((yyvsp[(1) - (1)].tr)); }
     break;
 
   case 16:
-#line 67 "calc.y"
+#line 71 "calc.y"
     { (yyval.tr) = new_ExprTree_struct_ref((yyvsp[(1) - (3)].tr),(yyvsp[(2) - (3)].tr),(yyvsp[(3) - (3)].tr)); }
     break;
 
   case 17:
-#line 68 "calc.y"
+#line 72 "calc.y"
     { (yyval.tr) = new_ExprTree_array((yyvsp[(1) - (4)].tr),(yyvsp[(3) - (4)].tr)); }
     break;
 
   case 18:
-#line 69 "calc.y"
+#line 73 "calc.y"
     { (yyval.tr) = new_ExprTree_ref('*',(yyvsp[(2) - (2)].tr)); }
     break;
 
   case 19:
-#line 70 "calc.y"
+#line 74 "calc.y"
     { (yyval.tr) = new_ExprTree_ref('*',(yyvsp[(2) - (2)].tr)); }
     break;
 
 
 /* Line 1267 of yacc.c.  */
-#line 1458 "y.tab.c"
+#line 1462 "y.tab.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -1668,7 +1672,7 @@ yyreturn:
 }
 
 
-#line 72 "calc.y"
+#line 76 "calc.y"
 
 
 #ifdef YYWRAP_NEEDED
@@ -1679,9 +1683,9 @@ void yywrap(void)
 }
 #endif
 
-void yyerror(char * s) 
+
+void yyerror(char const * s) 
 {
-  /*** stringpos is position along the string ***/
 
   int i;
 
@@ -1694,10 +1698,9 @@ void yyerror(char * s)
   fputc('^',stderr);
   fputc('\n',stderr);
 
-  root = NULL; /*** fuck - memory !!!! ***/
+  root = NULL;
 
 }
-
 
 
 

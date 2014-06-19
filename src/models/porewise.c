@@ -1,4 +1,5 @@
 #include "dualsignal.h"
+#include "eventalign.h"
 #include "signalalign.h"
 #include "version.h"
 
@@ -24,7 +25,8 @@ void show_help(FILE * ofp)
 {
   fprintf(ofp,"%s signal-file dna-fasta\n",program_name);
 
-  fprintf(ofp,"  -sigrev    signal is reverse strand\n");
+  fprintf(ofp,"  -sigrev    signal is reverse strand (currently not implemented!)\n");
+  fprintf(ofp,"  -raw       signal is raw signal (rather than events)\n");
   fprintf(ofp,"Model Parameter options\n");
   fprintf(ofp,"  -signalmap signal map tab delimited file\n");
   fprintf(ofp,"  -weight    weight of counts from normal distributions in SignalMap [500.0]\n");
@@ -36,8 +38,10 @@ void show_help(FILE * ofp)
   fprintf(ofp,"Display options\n");
   fprintf(ofp,"  -pal       show raw alignment\n");
   fprintf(ofp,"  -alb       show text (alb) alignment\n");
-  fprintf(ofp,"  -fit       show fit alignment\n");
+  fprintf(ofp,"  -fit       show fit alignment (event and raw)\n");
+  fprintf(ofp,"  -raw_event For raw signal alignments, output implied events\n");
 
+  show_help_RawSignalMatParaProb_from_argv(ofp);
 
   show_help_DPRunImpl(ofp);
 
@@ -47,6 +51,8 @@ void show_help(FILE * ofp)
 int main(int argc,char ** argv)
 {
   DPRunImpl * dpri;
+  RawSignalMatParaProb * rsmp;
+  RawSignalMatParaScore * rsmps;
 
   double dis_weight  = 500.0;
   double pseudocount = 1.0;
@@ -56,6 +62,8 @@ int main(int argc,char ** argv)
 
   SignalSeq * sseq;
   SignalEventList * sel;
+
+  RawSignalSeq * rss;
   
   Sequence * comp;
 
@@ -77,8 +85,11 @@ int main(int argc,char ** argv)
   boolean show_fit = FALSE;
   
   boolean sig_reverse  = FALSE;
+  boolean is_raw   = FALSE;
 
   boolean print_model = TRUE;
+
+  boolean raw_to_event = FALSE;
   
   strip_out_float_argument(&argc,argv,"weight",&dis_weight);
   strip_out_float_argument(&argc,argv,"pscount",&pseudocount);
@@ -89,6 +100,7 @@ int main(int argc,char ** argv)
   strip_out_float_argument(&argc,argv,"signaldiff",&signal_prob);
   strip_out_float_argument(&argc,argv,"signalext",&signal_ext);
   
+  raw_to_event = strip_out_boolean_argument(&argc,argv,"raw_event");
 
   signal_map_file = strip_out_assigned_argument(&argc,argv,"signalmap");
 
@@ -98,7 +110,14 @@ int main(int argc,char ** argv)
   show_alb = strip_out_boolean_argument(&argc,argv,"alb");
   show_fit = strip_out_boolean_argument(&argc,argv,"fit");
 
+  is_raw   = strip_out_boolean_argument(&argc,argv,"raw");
+
   sig_reverse = strip_out_boolean_argument(&argc,argv,"sigrev");
+
+
+  rsmp = new_RawSignalMatParaProb_from_argv(&argc,argv);
+
+  rsmps = make_RawSignalMatParaScore(rsmp);
 
   strip_out_standard_options(&argc,argv,show_help,show_version);
   if( argc != 3 ) {
@@ -121,23 +140,37 @@ int main(int argc,char ** argv)
 
   prepare_SignalMap(sm,pseudocount);
   
-
   ifp = openfile(argv[1],"r");
 
-  sel = read_SignalEventList(ifp);
-
-  sseq = SignalSeq_from_SignalEventList(sel);
-
-  
-  assert(sseq != NULL);
+  /* need to flip whether signal is raw or not */
 
   comp = read_fasta_file_Sequence(argv[2]);
-
+  
   assert(comp);
+  
+  if( is_raw == FALSE ) {
+    sel = read_SignalEventList(ifp);
+    
+    sseq = SignalSeq_from_SignalEventList(sel);
+    
+    
+    assert(sseq != NULL);
+    
+    pal = PackAln_bestmemory_EventSignalMat(sseq,comp,sm,Probability2Score(signal_prob),Probability2Score(signal_ext),Probability2Score(seqdiff),Probability2Score(seqdiff_ext),NULL,dpri);
+    alb = convert_PackAln_to_AlnBlock_EventSignalMat(pal);
 
-  pal = PackAln_bestmemory_SimpleSignalMat(sseq,comp,sm,Probability2Score(signal_prob),Probability2Score(signal_ext),Probability2Score(seqdiff),Probability2Score(seqdiff_ext),NULL,dpri);
 
-  alb = convert_PackAln_to_AlnBlock_SimpleSignalMat(pal);
+  } else {
+
+    rss = read_RawSignalSeq(ifp);
+
+    assert(rss != NULL);
+
+    pal = PackAln_bestmemory_RawSignalMat(comp,rss,sm,rsmps,NULL,dpri);
+
+    alb = convert_PackAln_to_AlnBlock_RawSignalMat(pal);
+
+  }
 
   if( show_pal == TRUE ) {
     show_simple_PackAln(pal,stdout);
@@ -149,7 +182,15 @@ int main(int argc,char ** argv)
   
 
   if( show_fit == TRUE ) {
-    show_alignment_with_fit_SimpleSignalMat(alb,sel,comp,sm,stdout);
+    if( is_raw == TRUE ) {
+      show_fit_RawSignalMat(comp,rss,rsmps,sm,alb,stdout);
+      if( raw_to_event == TRUE ) {
+	sel = implied_event_from_RawSignalSeq_align(comp,rss,sm,alb);
+	write_SignalEventList(sel,stdout);
+      }
+    } else {
+      show_alignment_with_fit_SimpleSignalMat(alb,sel,comp,sm,stdout);
+    }
   }
 
 }

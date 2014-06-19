@@ -14,7 +14,12 @@ extern "C" {
 
 #define MAX_EVENT_KMER 24
 
-#define SignalEventListLISTLENGTH 1028
+#define DUALSIGNAL_INIT_SIZE 1024
+
+#define SignalEventListLISTLENGTH 1024
+
+
+#define CSEQ_DUAL_SIGNAL_KMER(cseq,j) (ComplexSequence_data(cseq,j,3))
 
 struct Wise2_SignalEvent {  
     int dynamite_hard_link;  
@@ -51,6 +56,26 @@ struct Wise2_SignalEventList {
 typedef struct Wise2_SignalEventList Wise2_SignalEventList;
 #define SignalEventList Wise2_SignalEventList
 #define DYNAMITE_DEFINED_SignalEventList
+#endif
+
+
+struct Wise2_RawSignalSeq {  
+    int dynamite_hard_link;  
+#ifdef PTHREAD   
+    pthread_mutex_t dynamite_mutex;  
+#endif   
+    double * signal;     
+    double * time_len;   
+    double * signal_var;     
+    int len;     
+    double start_time;   
+    char * name;     
+    } ;  
+/* RawSignalSeq defined */ 
+#ifndef DYNAMITE_DEFINED_RawSignalSeq
+typedef struct Wise2_RawSignalSeq Wise2_RawSignalSeq;
+#define RawSignalSeq Wise2_RawSignalSeq
+#define DYNAMITE_DEFINED_RawSignalSeq
 #endif
 
 
@@ -285,6 +310,49 @@ SignalEventList * Wise2_free_SignalEventList(SignalEventList * obj);
 #define free_SignalEventList Wise2_free_SignalEventList
 
 
+/* Function:  hard_link_RawSignalSeq(obj)
+ *
+ * Descrip:    Bumps up the reference count of the object
+ *             Meaning that multiple pointers can 'own' it
+ *
+ *
+ * Arg:        obj [UNKN ] Object to be hard linked [RawSignalSeq *]
+ *
+ * Return [UNKN ]  Undocumented return value [RawSignalSeq *]
+ *
+ */
+RawSignalSeq * Wise2_hard_link_RawSignalSeq(RawSignalSeq * obj);
+#define hard_link_RawSignalSeq Wise2_hard_link_RawSignalSeq
+
+
+/* Function:  RawSignalSeq_alloc(void)
+ *
+ * Descrip:    Allocates structure: assigns defaults if given 
+ *
+ *
+ *
+ * Return [UNKN ]  Undocumented return value [RawSignalSeq *]
+ *
+ */
+RawSignalSeq * Wise2_RawSignalSeq_alloc(void);
+#define RawSignalSeq_alloc Wise2_RawSignalSeq_alloc
+
+
+/* Function:  free_RawSignalSeq(obj)
+ *
+ * Descrip:    Free Function: removes the memory held by obj
+ *             Will chain up to owned members and clear all lists
+ *
+ *
+ * Arg:        obj [UNKN ] Object that is free'd [RawSignalSeq *]
+ *
+ * Return [UNKN ]  Undocumented return value [RawSignalSeq *]
+ *
+ */
+RawSignalSeq * Wise2_free_RawSignalSeq(RawSignalSeq * obj);
+#define free_RawSignalSeq Wise2_free_RawSignalSeq
+
+
 /* Function:  hard_link_SignalSeq(obj)
  *
  * Descrip:    Bumps up the reference count of the object
@@ -459,8 +527,18 @@ SignalSim * Wise2_free_SignalSim(SignalSim * obj);
 
   /* Unplaced functions */
   /* There has been no indication of the use of these functions */
+ComplexSequenceEvalSet * Wise2_kmer_ComplexSequenceEvalSet(int kmer_size);
+#define kmer_ComplexSequenceEvalSet Wise2_kmer_ComplexSequenceEvalSet
+ComplexSequenceEval * Wise2_kmer_number_ComplexSequenceEval(int kmer_size);
+#define kmer_number_ComplexSequenceEval Wise2_kmer_number_ComplexSequenceEval
+int Wise2_kmer_complexseq_eval(int type,void * data,char * seq);
+#define kmer_complexseq_eval Wise2_kmer_complexseq_eval
+void Wise2_show_alignment_with_fit_SimpleSignalMat(AlnBlock * alb,SignalEventList * sel,Sequence * comp,SignalMap * sm,FILE * ofp);
+#define show_alignment_with_fit_SimpleSignalMat Wise2_show_alignment_with_fit_SimpleSignalMat
 SignalMap * Wise2_reverse_SignalMap(SignalMap * sm);
 #define reverse_SignalMap Wise2_reverse_SignalMap
+Score Wise2_Score_offset_RawSignalMap(SignalMap * sm,RawSignalSeq * raw,int i,Sequence * comp,int j);
+#define Score_offset_RawSignalMap Wise2_Score_offset_RawSignalMap
 Score Wise2_Score_offset_SignalMap(SignalMap * sm,SignalSeq * sseq,int i,Sequence * comp,int j);
 #define Score_offset_SignalMap Wise2_Score_offset_SignalMap
 boolean Wise2_flip_coin(Probability p);
@@ -471,8 +549,14 @@ double Wise2_draw_from_normal(double mean,double sd);
 #define draw_from_normal Wise2_draw_from_normal
 SignalSim * Wise2_new_SignalSim(double insert,double stay_insert,double skip);
 #define new_SignalSim Wise2_new_SignalSim
+RawSignalSeq * Wise2_simulated_RawSignalSeq_from_Seq(Sequence * seq,SignalMap * sm,SignalSim * sim,int length_of_event);
+#define simulated_RawSignalSeq_from_Seq Wise2_simulated_RawSignalSeq_from_Seq
 SignalSeq * Wise2_simulated_SignalSeq_from_Seq(Sequence * seq,SignalMap * sm,SignalSim * sim);
 #define simulated_SignalSeq_from_Seq Wise2_simulated_SignalSeq_from_Seq
+void Wise2_write_RawSignalSeq(RawSignalSeq * rss,FILE *ofp);
+#define write_RawSignalSeq Wise2_write_RawSignalSeq
+RawSignalSeq * Wise2_read_RawSignalSeq(FILE * ifp);
+#define read_RawSignalSeq Wise2_read_RawSignalSeq
 SignalSeq * Wise2_read_SignalSeq(FILE * ifp);
 #define read_SignalSeq Wise2_read_SignalSeq
 void Wise2_write_SignalSeq(SignalSeq * ss,FILE * ofp);

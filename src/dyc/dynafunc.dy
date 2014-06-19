@@ -1677,8 +1677,8 @@ void matrix_calculate_func(DYNFILE * dfp,GenericMatrix * gm)
   expr(dfp,"int j;");
   expr(dfp,"int leni;");
   expr(dfp,"int lenj;");
-  expr(dfp,"int tot;");
-  expr(dfp,"int num;");
+  expr(dfp,"long int tot;");
+  expr(dfp,"long int num;");
   add_break(dfp);
   
   expr(dfp,"if( mat->basematrix->type != BASEMATRIX_TYPE_EXPLICIT )");
